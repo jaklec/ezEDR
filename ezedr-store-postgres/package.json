@@ -1,0 +1,41 @@
+{
+  "name": "edr-store-postgres",
+  "version": "0.0.1",
+  "description": "",
+  "main": "target/index.js",
+  "files": [
+    "target"
+  ],
+  "scripts": {
+    "test": "jest --detectOpenHandles --config ./jest.json",
+    "pretest:e2e": "./scripts/initdb.sh || true",
+    "test:e2e": "jest --detectOpenHandles --runInBand --config ./jest.e2e.json",
+    "test:all": "npm run test & npm run test:e2e",
+    "format": "prettier --write 'src/**/*.ts'",
+    "lint": "eslint ./src -ext ts",
+    "lint:fix": "npm run lint --fix",
+    "clean": "rm -rf lib",
+    "prebuild": "npm run clean",
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "peerDependencies": {
+    "pg": "^8.6.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^26.0.24",
+    "@types/node": "^16.0.0",
+    "@types/pg": "^8.6.0",
+    "@typescript-eslint/eslint-plugin": "^4.28.2",
+    "@typescript-eslint/parser": "^4.28.2",
+    "eslint": "^7.30.0",
+    "jest": "^27.0.6",
+    "prettier": "^2.3.2",
+    "ts-jest": "^27.0.3",
+    "ts-node": "^10.0.0",
+    "typescript": "^4.3.5",
+    "pg": "^8.6.0"
+  }
+}
