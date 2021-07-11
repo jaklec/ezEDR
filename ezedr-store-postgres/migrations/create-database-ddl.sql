@@ -10,7 +10,6 @@ CREATE TABLE IF NOT EXISTS "events" (
   "sequence_number" BIGSERIAL,
   "base_version" INT NOT NULL,
   "version" INT NOT NULL,
-  "snapshot_version" INT NOT NULL DEFAULT 0,
   "timestamp" BIGINT NOT NULL,
   "committer" VARCHAR NOT NULL,
   "data" TEXT,

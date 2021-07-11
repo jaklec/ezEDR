@@ -1,7 +1,8 @@
 import { Pool } from "pg";
-import { createRepository, Instruction } from "../src/repository";
+import { createRepository, Instruction, Repository } from "../src/repository";
+import { Client, createClient } from "../src/repository/postgres-repository";
 
-describe("Event Writer", () => {
+describe("e2e: Event Writer", () => {
   const dbPool: Pool = new Pool({
     host: "localhost",
     user: "developer",
@@ -10,7 +11,9 @@ describe("Event Writer", () => {
     port: 5432,
   });
 
-  const repository = createRepository(dbPool);
+  const client: Client = createClient(dbPool);
+
+  const repository: Repository = createRepository(client);
 
   beforeEach(async () => {
     await dbPool.query("TRUNCATE versions");
@@ -233,5 +236,24 @@ describe("Event Writer", () => {
     expect(JSON.parse(rows[0].data)).toEqual({ drink: "milk", food: "pasta" });
     expect(JSON.parse(rows[1].data)).toEqual({ drink: "wine" });
     expect(JSON.parse(rows[2].data)).toEqual({ food: "fish" });
+  });
+
+  test("return id and current version of the aggregate", async () => {
+    expect.assertions(1);
+
+    const instruction: Instruction<unknown> = {
+      aggregateId: "123",
+      event: "test-event",
+      version: 0,
+      committer: "test-user",
+      data: { payload: "test-data" },
+    };
+
+    const result = await repository.save(instruction);
+
+    expect(result).toMatchObject({
+      aggregateId: "123",
+      currentVersion: 0,
+    });
   });
 });
