@@ -68,6 +68,15 @@ export interface Repository {
   ) => Promise<ListResult>;
 }
 
+/**
+ * List of all events associated with the aggregate.
+ */
+export type ListResult = {
+  aggregateId: AggregateId;
+  fromVersion: number;
+  events: EventRecord[];
+};
+
 type EventRecord = {
   version: Version;
   event: string;
@@ -75,20 +84,22 @@ type EventRecord = {
   timestamp: number;
 };
 
-export type ListResult = {
-  aggregateId: AggregateId;
-  fromVersion: number;
-  events: EventRecord[];
+/**
+ * Optional parameters to filter the search in the event log.
+ *
+ * @param fromVersion Start reading the log from this version. This parameter
+ * could come handy when combining this function with aggregate snapshots.
+ * @param pagination Contains two parameters, `limit` and `offset`, that can be
+ * used to paginate the result set.
+ */
+export type ReadOpts = {
+  pagination?: PaginationOpts;
+  fromVersion?: Version;
 };
 
 type PaginationOpts = {
   limit?: number;
   offset?: number;
-};
-
-export type ReadOpts = {
-  pagination?: PaginationOpts;
-  fromVersion?: number;
 };
 
 /**
