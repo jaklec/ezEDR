@@ -45,6 +45,7 @@ export async function readAggregate(
       version: row.version,
       event: row.event,
       data: row.data,
+      committer: row.committer,
       timestamp: row.timestamp,
     }));
 

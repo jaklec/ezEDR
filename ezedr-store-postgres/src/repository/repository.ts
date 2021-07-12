@@ -81,6 +81,7 @@ type EventRecord = {
   version: Version;
   event: string;
   data?: string;
+  committer: string;
   timestamp: number;
 };
 
