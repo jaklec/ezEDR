@@ -1,7 +1,10 @@
-import { AggregateId, CommitResponse, Instruction } from ".";
+import {
+  AggregateId,
+  CommitResponse,
+  Instruction,
+  Version,
+} from "./repository";
 import { Client } from "./postgres-repository";
-
-type Version = number;
 
 /**
  * Write events to the log using optimistic concurrency.
@@ -33,12 +36,12 @@ export async function write<T>(
 ): Promise<CommitResponse> {
   const { aggregateId, event, committer, data } = instr;
 
-  const version = await writeVersion(client, {
-    aggregateId,
-    version: instr.version,
-  });
+  const baseVersion = normalizeBaseVersion(instr.baseVersion);
 
-  const baseVersion: number = instr.version;
+  const version = await incrVersion(client, {
+    aggregateId,
+    version: baseVersion,
+  });
 
   return writeEvent(client, {
     aggregateId,
@@ -48,6 +51,10 @@ export async function write<T>(
     committer,
     data,
   });
+}
+
+function normalizeBaseVersion(version?: Version): Version {
+  return version !== undefined && version >= 0 ? version : -1;
 }
 
 /**
@@ -62,7 +69,7 @@ export async function write<T>(
  *
  * @returns Promise with new version number
  */
-async function writeVersion(
+async function incrVersion(
   client: Client,
   opts: {
     aggregateId: AggregateId;
@@ -72,23 +79,24 @@ async function writeVersion(
   const { aggregateId, version } = opts;
 
   if (version < 0) {
-    throw new Error(
-      "Invalid version - numbers less than zero are not allowed."
-    );
-  }
-
-  if (version === 0) {
     const rs = await client.query(
       `INSERT INTO "versions"("aggregate_id","version") VALUES($1,$2) RETURNING versions.version`,
-      [aggregateId, version]
+      [aggregateId, 0]
     );
     return rs.rows[0].version;
   } else {
-    const rs_1 = await client.query(
+    const rs = await client.query(
       `UPDATE "versions" SET version = versions.version + 1 WHERE "aggregate_id" = $1 RETURNING versions.version`,
       [aggregateId]
     );
-    return rs_1.rows[0].version;
+    const firstRow = rs.rows[0];
+    if (firstRow) {
+      return firstRow.version;
+    }
+
+    throw new Error(
+      "Failed to update aggregate version. Check that it exists and that your are providing correct base version information!"
+    );
   }
 }
 

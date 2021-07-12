@@ -2,6 +2,9 @@ import { Pool } from "pg";
 import { createRepository, Instruction, Repository } from "../src/repository";
 import { Client, createClient } from "../src/repository/postgres-repository";
 
+/*
+ * End to end test for writing to the log.
+ */
 describe("e2e: Event Writer", () => {
   const dbPool: Pool = new Pool({
     host: "localhost",
@@ -24,16 +27,15 @@ describe("e2e: Event Writer", () => {
     await dbPool.end();
   });
 
+  /*
+   * The `Repository` should save an `Instruction` record to the "events" table.
+   */
   test("save event", async () => {
-    /*
-     * The `Repository` should save an `Instruction` record to the "events" table.
-     */
     expect.assertions(3);
 
     const instruction: Instruction<unknown> = {
       aggregateId: "123",
       event: "test-event",
-      version: 0,
       committer: "test-user",
       data: { payload: "test-data" },
     };
@@ -50,17 +52,16 @@ describe("e2e: Event Writer", () => {
     expect(JSON.parse(rows[0].data)).toEqual({ payload: "test-data" });
   });
 
+  /*
+   * Before saving an `Instruction` to the "events" table, the save operation
+   * should acquire a new version candidate.
+   */
   test("save version", async () => {
-    /*
-     * Before saving an `Instruction` to the "events" table, the save operation
-     * should acquire a new version candidate.
-     */
     expect.assertions(2);
 
     const instruction: Instruction<unknown> = {
       aggregateId: "123",
       event: "test-event",
-      version: 0,
       committer: "test-user",
       data: { payload: "test-data" },
     };
@@ -76,23 +77,26 @@ describe("e2e: Event Writer", () => {
     expect(rows[0].version).toBe(0);
   });
 
+  /*
+   * It's the clients responsibility to keep track of the version when
+   * updating an aggregate. The save operation should be accepted as long
+   * as the client is updating with a valid version number.
+   */
   test("incremental versions on multiple saves", async () => {
-    /*
-     * It's the clients responsibility to keep track of the version when
-     * updating an aggregate. The save operation should be accepted as long
-     * as the client is updating with a valid version number.
-     */
     expect.assertions(2);
 
     const instruction0: Instruction<unknown> = {
       aggregateId: "123",
       event: "test-event",
-      version: 0,
+      baseVersion: -1,
       committer: "test-user",
       data: { payload: "test-data" },
     };
 
-    const instruction1: Instruction<unknown> = { ...instruction0, version: 1 };
+    const instruction1: Instruction<unknown> = {
+      ...instruction0,
+      baseVersion: 0,
+    };
 
     await repository.save(instruction0);
     await repository.save(instruction1);
@@ -106,17 +110,39 @@ describe("e2e: Event Writer", () => {
     expect(rows[0].version).toBe(1);
   });
 
+  /*
+   * There is no base version when we are creating a new aggregate. Let's set
+   * the base version number to -1 to avoid null values.
+   */
+  test("set initial base version to -1", async () => {
+    const instruction: Instruction<unknown> = {
+      aggregateId: "123",
+      event: "test-event",
+      committer: "test-user",
+      data: { payload: "test-data" },
+    };
+
+    await repository.save(instruction);
+
+    const { rows } = await dbPool.query(
+      'SELECT * FROM "events" WHERE "aggregate_id" = $1',
+      ["123"]
+    );
+
+    expect(rows[0].base_version).toBe(-1);
+  });
+
+  /*
+   * The save operation should be rejected if the client tries to update
+   * the aggregate with an outdated version number.
+   */
   test("reject old base version", async () => {
-    /*
-     * The save operation should be rejected if the client tries to update
-     * the aggregate with an outdated version number.
-     */
     expect.assertions(1);
 
     const instruction: Instruction<unknown> = {
       aggregateId: "123",
       event: "test-event",
-      version: 0,
+      baseVersion: -1,
       committer: "test-user",
       data: { payload: "test-data" },
     };
@@ -127,17 +153,17 @@ describe("e2e: Event Writer", () => {
     await expect(repository.save(instruction)).rejects.toThrow();
   });
 
-  test("reject new aggregates with version !== 0", async () => {
-    /*
-     * The save operation should be rejected if the client is trying to create
-     * a new aggregate with a version number other than 0.
-     */
+  /*
+   * The save operation should be rejected if the client is trying to create
+   * a new aggregate with a version number other than 0.
+   */
+  test("reject new aggregates with base version >= 0", async () => {
     expect.assertions(1);
 
     const instruction: Instruction<unknown> = {
       aggregateId: "123",
       event: "test-event",
-      version: 1,
+      baseVersion: 0,
       committer: "test-user",
       data: { payload: "test-data" },
     };
@@ -145,18 +171,17 @@ describe("e2e: Event Writer", () => {
     await expect(repository.save(instruction)).rejects.toThrow();
   });
 
+  /*
+   * The fact that the version number is always incremented regardless of
+   * whether the instruction is valid or not should not affect future
+   * save operations.
+   */
   test("accept valid instructions after previous rejection", async () => {
-    /*
-     * The fact that the version number is always incremented regardless of
-     * whether the instruction is valid or not should not affect future
-     * save operations.
-     */
     expect.assertions(4);
 
     const valid0: Instruction<unknown> = {
       aggregateId: "123",
       event: "test-event",
-      version: 0,
       committer: "test-user",
       data: { payload: "test-data" },
     };
@@ -166,7 +191,7 @@ describe("e2e: Event Writer", () => {
     const invalid: Instruction<unknown> = { ...valid0 }; // This has already been recorded!
     await expect(repository.save(invalid)).rejects.toThrow();
 
-    const valid1: Instruction<unknown> = { ...valid0, version: 1 };
+    const valid1: Instruction<unknown> = { ...valid0, baseVersion: 0 };
     await repository.save(valid1);
 
     const { rowCount, rows } = await dbPool.query(
@@ -179,18 +204,17 @@ describe("e2e: Event Writer", () => {
     expect(rows[1].version).toBe(1);
   });
 
+  /*
+   * To facilitate concurrency, the aggregate version should be coupled to
+   * the event type. Collisions should occur only within the scope of a
+   * certain event.
+   */
   test("version is coupled to event type", async () => {
-    /*
-     * To facilitate concurrency, the aggregate version should be coupled to
-     * the event type. Collisions should occur only within the scope of a
-     * certain event.
-     */
     expect.assertions(5);
 
     const createOrder: Instruction<unknown> = {
       aggregateId: "123",
       event: "ORDER_CREATED",
-      version: 0,
       committer: "test-user",
       data: { drink: "milk", food: "pasta" },
     };
@@ -200,7 +224,7 @@ describe("e2e: Event Writer", () => {
     const updateDrinkValid: Instruction<unknown> = {
       ...createOrder,
       event: "ORDER_DRINK_WAS_UPDATED",
-      version: 1,
+      baseVersion: 1,
       data: { drink: "wine" },
     };
 
@@ -210,7 +234,7 @@ describe("e2e: Event Writer", () => {
     // rejected!
     const updateDrinkInvalid: Instruction<unknown> = {
       ...updateDrinkValid,
-      version: 1,
+      baseVersion: 1,
       data: { drink: "water" },
     };
 
@@ -221,7 +245,7 @@ describe("e2e: Event Writer", () => {
     const updateFood: Instruction<unknown> = {
       ...createOrder,
       event: "ORDER_FOOD_WAS_UPDATED",
-      version: 1,
+      baseVersion: 1,
       data: { food: "fish" },
     };
 
@@ -238,13 +262,16 @@ describe("e2e: Event Writer", () => {
     expect(JSON.parse(rows[2].data)).toEqual({ food: "fish" });
   });
 
+  /*
+   * Always returning the current version of the aggregate after a write
+   * operation makes writing clients easier!
+   */
   test("return id and current version of the aggregate", async () => {
     expect.assertions(1);
 
     const instruction: Instruction<unknown> = {
       aggregateId: "123",
       event: "test-event",
-      version: 0,
       committer: "test-user",
       data: { payload: "test-data" },
     };

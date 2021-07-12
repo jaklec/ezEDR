@@ -10,6 +10,11 @@ export type AggregateId = string;
 export type Event = string;
 
 /**
+ * Type alias for a version associated to an aggregate. Implemented as a `number`.
+ */
+export type Version = number;
+
+/**
  * An instruction to write an event to the log.
  * This is typically somewhere between a `command` and an `event` in event
  * sourcing.
@@ -17,7 +22,7 @@ export type Event = string;
 export type Instruction<T> = {
   aggregateId: AggregateId;
   event: Event;
-  version: number;
+  baseVersion?: number;
   committer: string;
   data?: T;
   eventChain?: string[];
@@ -33,7 +38,6 @@ export type CommitResponse = {
 };
 
 /**
- * @interface
  * A repository for easy writes and reads from the log.
  */
 export interface Repository {
@@ -45,7 +49,47 @@ export interface Repository {
    * @returns A promise with `CommitResponse`
    */
   save: <T>(instr: Instruction<T>) => Promise<CommitResponse>;
+
+  /**
+   * Read events associated to an aggregate. The result is a (optionally
+   * paginated) list with some extra meta data added.
+   *
+   * This function could be used to build views of the the current state for an
+   * aggregate or displaying audit logs.
+   *
+   * @param aggregateId The `AggregateId` that identifies the aggregate.
+   * @param readOpts optional configuration to enable pagination by setting the
+   * page size (`limit`) and page number (`offset`). It's also possible to set
+   * `fromVersion` which can be useful with snapshots.
+   */
+  readAggregate: (
+    aggregateId: AggregateId,
+    readOpts?: ReadOpts
+  ) => Promise<ListResult>;
 }
+
+type EventRecord = {
+  version: Version;
+  event: string;
+  data?: string;
+  timestamp: number;
+};
+
+export type ListResult = {
+  aggregateId: AggregateId;
+  fromVersion: number;
+  events: EventRecord[];
+};
+
+type PaginationOpts = {
+  limit?: number;
+  offset?: number;
+};
+
+export type ReadOpts = {
+  pagination?: PaginationOpts;
+  fromVersion?: number;
+};
 
 /**
  * This error is thrown when the client is trying to write an event that

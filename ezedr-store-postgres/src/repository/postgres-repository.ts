@@ -1,6 +1,14 @@
 import { Pool, QueryResult } from "pg";
-import { CommitResponse, Instruction, Repository } from "./repository";
-import { write } from "./write";
+import { readAggregate } from "./reader";
+import {
+  AggregateId,
+  CommitResponse,
+  Instruction,
+  ListResult,
+  ReadOpts,
+  Repository,
+} from "./repository";
+import { write } from "./writer";
 
 /**
  * Wrapper around Postgres connection pool.
@@ -33,5 +41,9 @@ export function createRepository(client: Client): Repository {
   return {
     save: async <T>(instr: Instruction<T>): Promise<CommitResponse> =>
       write(client, instr),
+    readAggregate: async (
+      aggregateId: AggregateId,
+      readOpts?: ReadOpts
+    ): Promise<ListResult> => readAggregate(client, aggregateId, readOpts),
   };
 }
