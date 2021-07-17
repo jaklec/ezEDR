@@ -1,0 +1,12 @@
+{
+  "name": "@jaklec/ezedr",
+  "version": "0.0.1",
+  "workspaces": [
+    "./ezedr-store",
+    "./ezedr-store-postgres"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc --build tsconfig.build.json"
+  }
+}

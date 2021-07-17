@@ -3,7 +3,7 @@ import {
   CommitResponse,
   Instruction,
   Version,
-} from "./repository";
+} from "@jaklec/ezedr-store";
 import { Client } from "./postgres-repository";
 
 /**

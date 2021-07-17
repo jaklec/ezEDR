@@ -1,6 +1,10 @@
 import { Pool } from "pg";
-import { createRepository, Instruction, Repository } from "../src/repository";
-import { Client, createClient } from "../src/repository/postgres-repository";
+import { Instruction, Repository } from "@jaklec/ezedr-store";
+import {
+  Client,
+  createClient,
+  createRepository,
+} from "../src/repository/postgres-repository";
 
 /*
  * End to end test for writing to the log.

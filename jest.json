@@ -5,8 +5,5 @@
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
-  "testRegex": "e2e/.+\\.test.(t|j)s$",
-  "setupFiles": [
-    "<rootDir>/jest.setup.ts"
-  ]
+  "testRegex": "src/.+\\.test.(t|j)s$"
 }
