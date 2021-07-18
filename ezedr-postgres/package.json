@@ -7,13 +7,13 @@
     "target"
   ],
   "scripts": {
-    "test": "jest --detectOpenHandles --passWithNoTests --config ../jest.json",
     "pretest:e2e": "./scripts/initdb.sh || true",
     "test:e2e": "jest --detectOpenHandles --runInBand --config ../jest.e2e.json",
     "test:all": "npm run test & npm run test:e2e",
     "format": "prettier --write 'src/**/*.ts'",
     "lint": "eslint ./src --ext ts",
     "lint:fix": "npm run lint --fix",
+    "check": "npm run lint && prettier --check 'src/**/*.ts'",
     "clean": "rm -rf target",
     "prebuild": "npm run clean",
     "build": "tsc"

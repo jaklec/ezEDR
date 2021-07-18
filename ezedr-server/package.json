@@ -8,10 +8,11 @@
     "target"
   ],
   "scripts": {
-    "test": "jest --detectOpenHandles --passWithNoTests --config ../jest.json",
+    "test": "LOG_LEVEL=silent jest --detectOpenHandles --passWithNoTests --config ../jest.json",
     "format": "prettier --write 'src/**/*.ts'",
     "lint": "eslint ./src --ext ts",
     "lint:fix": "npm run lint --fix",
+    "check": "npm run lint && prettier --check 'src/**/*.ts'",
     "clean": "rm -rf target",
     "prebuild": "npm run clean",
     "build": "tsc"
@@ -25,10 +26,14 @@
     "@typescript-eslint/eslint-plugin": "^4.28.3",
     "@typescript-eslint/parser": "^4.28.3",
     "eslint": "^7.30.0",
+    "fastify": "^3.19.1",
     "jest": "^27.0.6",
     "prettier": "^2.3.2",
     "ts-jest": "^27.0.3",
     "ts-node": "^10.1.0",
     "typescript": "^4.3.5"
+  },
+  "peerDependencies": {
+    "fastify": "^3.19.1"
   }
 }
