@@ -1,5 +1,5 @@
-import { Client } from "./postgres-repository";
-import { AggregateId, ListResult, ReadOpts } from "@jaklec/ezedr-store";
+import { Client } from "./repository";
+import { AggregateId, ListResult, ReadOpts } from "@jaklec/ezedr-server";
 
 /**
  * Read all log entries that builds the aggregate. This function could be used

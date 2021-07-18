@@ -1,16 +1,14 @@
 {
-  "name": "@jaklec/ezedr-store-postgres",
+  "name": "@jaklec/ezedr-server",
   "version": "0.0.1",
   "description": "",
   "main": "target/index.js",
+  "typings": "target/index.d.ts",
   "files": [
     "target"
   ],
   "scripts": {
     "test": "jest --detectOpenHandles --passWithNoTests --config ../jest.json",
-    "pretest:e2e": "./scripts/initdb.sh || true",
-    "test:e2e": "jest --detectOpenHandles --runInBand --config ../jest.e2e.json",
-    "test:all": "npm run test & npm run test:e2e",
     "format": "prettier --write 'src/**/*.ts'",
     "lint": "eslint ./src --ext ts",
     "lint:fix": "npm run lint --fix",
@@ -24,7 +22,6 @@
   "devDependencies": {
     "@types/jest": "^26.0.24",
     "@types/node": "^16.3.3",
-    "@types/pg": "^8.6.1",
     "@typescript-eslint/eslint-plugin": "^4.28.3",
     "@typescript-eslint/parser": "^4.28.3",
     "eslint": "^7.30.0",
@@ -33,8 +30,5 @@
     "ts-jest": "^27.0.3",
     "ts-node": "^10.1.0",
     "typescript": "^4.3.5"
-  },
-  "dependencies": {
-    "pg": "^8.6.0"
   }
 }

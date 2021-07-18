@@ -2,8 +2,8 @@
   "name": "@jaklec/ezedr",
   "version": "0.0.1",
   "workspaces": [
-    "./ezedr-store",
-    "./ezedr-store-postgres"
+    "./ezedr-server",
+    "./ezedr-postgres"
   ],
   "license": "MIT",
   "scripts": {

@@ -2,10 +2,10 @@
   "files":[],
   "references": [
     {
-      "path": "./ezedr-store"
+      "path": "./ezedr-server"
     },
     {
-      "path": "./ezedr-store-postgres"
+      "path": "./ezedr-postgres"
     }
   ]
 }

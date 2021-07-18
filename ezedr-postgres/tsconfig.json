@@ -73,7 +73,7 @@
   "exclude": ["node_modules", "**/*.test.ts", "e2e", "target"],
   "references": [
     {
-      "path": "../ezedr-store/tsconfig.json"
+      "path": "../ezedr-server/tsconfig.json"
     }
   ]
 }

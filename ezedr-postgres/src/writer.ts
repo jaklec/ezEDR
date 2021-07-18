@@ -3,8 +3,8 @@ import {
   CommitResponse,
   Instruction,
   Version,
-} from "@jaklec/ezedr-store";
-import { Client } from "./postgres-repository";
+} from "@jaklec/ezedr-server";
+import { Client } from "./repository";
 
 /**
  * Write events to the log using optimistic concurrency.

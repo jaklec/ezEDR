@@ -1,10 +1,6 @@
 import { Pool, QueryResult } from "pg";
-import { AggregateId, Repository, Version } from "@jaklec/ezedr-store";
-import {
-  Client,
-  createClient,
-  createRepository,
-} from "../src/repository/postgres-repository";
+import { AggregateId, Repository, Version } from "@jaklec/ezedr-server";
+import { Client, createClient, createRepository } from "../src/repository";
 
 /*
  * End to end test for reading operations against the log.
