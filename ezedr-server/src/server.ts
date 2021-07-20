@@ -1,9 +1,8 @@
 import fastify from "fastify";
+import { healthCheckRoute } from "./healthcheck";
 
 const server = fastify({ logger: { level: process.env.LOG_LEVEL } });
 
-server.get("/health", async (_, reply) => {
-  reply.send({});
-});
+server.route(healthCheckRoute);
 
 export { server };
