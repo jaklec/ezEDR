@@ -7,8 +7,9 @@
     "target"
   ],
   "scripts": {
+    "test": "LOG_LEVEL=silent jest --detectOpenHandles --passWithNoTests --config ./jest.config.js",
     "pretest:e2e": "./scripts/initdb.sh || true",
-    "test:e2e": "jest --detectOpenHandles --runInBand --config ../jest.e2e.json",
+    "test:e2e": "jest --detectOpenHandles --runInBand --config ./jest.e2e.config.js",
     "test:all": "npm run test & npm run test:e2e",
     "format": "prettier --write 'src/**/*.ts'",
     "lint": "eslint ./src --ext ts",

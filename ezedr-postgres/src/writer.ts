@@ -3,7 +3,7 @@ import {
   CommitResponse,
   Instruction,
   Version,
-} from "@jaklec/ezedr-server";
+} from "@jaklec/ezedr-core";
 import { Client } from "./repository";
 
 /**

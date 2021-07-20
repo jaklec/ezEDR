@@ -1,5 +1,5 @@
 {
-  "name": "@jaklec/ezedr-server",
+  "name": "@jaklec/ezedr-core",
   "version": "0.0.1",
   "description": "",
   "main": "target/index.js",
@@ -26,14 +26,10 @@
     "@typescript-eslint/eslint-plugin": "^4.28.3",
     "@typescript-eslint/parser": "^4.28.3",
     "eslint": "^7.30.0",
-    "fastify": "^3.19.1",
     "jest": "^27.0.6",
     "prettier": "^2.3.2",
     "ts-jest": "^27.0.3",
     "ts-node": "^10.1.0",
     "typescript": "^4.3.5"
-  },
-  "peerDependencies": {
-    "fastify": "^3.19.1"
   }
 }

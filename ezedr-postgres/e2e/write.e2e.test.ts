@@ -1,5 +1,5 @@
 import { Pool } from "pg";
-import { Instruction, Repository } from "@jaklec/ezedr-server";
+import { Instruction, Repository } from "@jaklec/ezedr-core";
 import { Client, createClient, createRepository } from "../src/repository";
 
 /*

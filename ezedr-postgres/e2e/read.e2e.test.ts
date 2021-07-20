@@ -1,5 +1,5 @@
 import { Pool, QueryResult } from "pg";
-import { AggregateId, Repository, Version } from "@jaklec/ezedr-server";
+import { AggregateId, Repository, Version } from "@jaklec/ezedr-core";
 import { Client, createClient, createRepository } from "../src/repository";
 
 /*

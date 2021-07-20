@@ -7,7 +7,7 @@ import {
   ListResult,
   ReadOpts,
   Repository,
-} from "@jaklec/ezedr-server";
+} from "@jaklec/ezedr-core";
 
 import { write } from "./writer";
 
