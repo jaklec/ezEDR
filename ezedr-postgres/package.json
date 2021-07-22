@@ -15,9 +15,9 @@
     "lint": "eslint ./src --ext ts",
     "lint:fix": "npm run lint --fix",
     "check": "npm run lint && prettier --check 'src/**/*.ts'",
-    "clean": "rm -rf target",
-    "prebuild": "npm run clean",
-    "build": "tsc"
+    "clean": "rm -rf target tsconfig.tsbuildinfo",
+    "build": "tsc",
+    "cleanbuild": "npm run clean && npm run build"
   },
   "keywords": [],
   "author": "",
@@ -33,9 +33,10 @@
     "prettier": "^2.3.2",
     "ts-jest": "^27.0.3",
     "ts-node": "^10.1.0",
-    "typescript": "^4.3.5"
+    "typescript": "^4.3.5",
+    "pg": "^8.6.0"
   },
-  "dependencies": {
+  "peerDependencies": {
     "pg": "^8.6.0"
   }
 }

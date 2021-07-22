@@ -1,3 +1,1 @@
-import { createRepository } from "./repository";
-
-export { createRepository };
+export * from "./repository";

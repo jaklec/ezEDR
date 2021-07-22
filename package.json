@@ -4,7 +4,8 @@
   "workspaces": [
     "./ezedr-core",
     "./ezedr-server",
-    "./ezedr-postgres"
+    "./ezedr-postgres",
+    "./ezedr-docker/postgres"
   ],
   "license": "MIT",
   "scripts": {

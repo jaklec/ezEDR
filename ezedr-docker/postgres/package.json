@@ -1,0 +1,22 @@
+{
+  "name": "@jaklec/ezedr-docker-postgres",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "dev": "node main.js | pino-pretty",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "dotenv": "^10.0.0",
+    "pino-pretty": "^5.1.2"
+  },
+  "dependencies": {
+    "fastify": "^3.19.2",
+    "pg": "^8.6.0",
+    "uuid": "^8.3.2"
+  }
+}
