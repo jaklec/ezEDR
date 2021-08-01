@@ -156,7 +156,7 @@ describe("e2e: Event Reader", () => {
     });
 
     const page0 = await repository.readAggregate("123", {
-      pagination: { limit: 2 },
+      limit: 2,
     });
 
     expect(page0.events.length).toBe(2);
@@ -164,7 +164,8 @@ describe("e2e: Event Reader", () => {
     expect(page0.events[1].version).toBe(1);
 
     const page1 = await repository.readAggregate("123", {
-      pagination: { limit: 2, offset: 2 },
+      limit: 2,
+      fromVersion: 2,
     });
 
     expect(page1.events.length).toBe(1); // We have drained the log at this point

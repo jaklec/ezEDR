@@ -30,14 +30,9 @@ export async function readAggregate(
 
   sqlQuery += ' ORDER BY "version" ASC';
 
-  if (readOpts?.pagination?.limit) {
+  if (readOpts?.limit) {
     sqlQuery += ` LIMIT $${++i}`;
-    params.push(readOpts.pagination.limit);
-  }
-
-  if (readOpts?.pagination?.offset) {
-    sqlQuery += ` OFFSET $${++i}`;
-    params.push(readOpts.pagination.offset);
+    params.push(readOpts.limit);
   }
 
   return client.query(sqlQuery, params).then((res) => {

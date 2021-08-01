@@ -59,8 +59,8 @@ export interface Repository {
    *
    * @param aggregateId The `AggregateId` that identifies the aggregate.
    * @param readOpts optional configuration to enable pagination by setting the
-   * page size (`limit`) and page number (`offset`). It's also possible to set
-   * `fromVersion` which can be useful with snapshots.
+   * page size (`limit`) and version (`fromVersion`). The latter may also be
+   * useful with snapshots.
    */
   readAggregate: (
     aggregateId: AggregateId,
@@ -90,17 +90,11 @@ type EventRecord = {
  *
  * @param fromVersion Start reading the log from this version. This parameter
  * could come handy when combining this function with aggregate snapshots.
- * @param pagination Contains two parameters, `limit` and `offset`, that can be
- * used to paginate the result set.
+ * @param limit is useful to paginate the result set.
  */
 export type ReadOpts = {
-  pagination?: PaginationOpts;
-  fromVersion?: Version;
-};
-
-type PaginationOpts = {
   limit?: number;
-  offset?: number;
+  fromVersion?: Version;
 };
 
 /**
