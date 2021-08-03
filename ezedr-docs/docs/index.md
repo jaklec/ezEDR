@@ -2,6 +2,9 @@
 
 **ezEDR is a drop in solution for quickly getting started with event sourcing.**
 
+The source code of this project can be found
+[here](https://github.com/jaklec/ezEDR).
+
 ## Why ezEDR?
 
 Event sourcing is a design pattern where the application state is stored as a
