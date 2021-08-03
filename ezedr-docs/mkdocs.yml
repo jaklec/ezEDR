@@ -1,0 +1,21 @@
+site_name: ezEDR
+nav:
+  - Home: index.md
+  - Server: server.md
+  - Postgres: postgres.md
+plugins:
+  - mermaid2
+  - search
+theme:
+  name: readthedocs
+  highlightjs: true
+  hljs_languages:
+    - bash
+    - sh
+    - javascript
+    - typescript
+    - yaml
+    - rust
+    - python
+    - go
+    - java
