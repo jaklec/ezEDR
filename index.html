@@ -49,6 +49,10 @@
 <ul class="current">
 <li class="toctree-l1 current"><a class="reference internal current" href=".">Home</a>
 <ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="#why-ezedr">Why ezEDR?</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#how-it-works">How it works</a>
+</li>
 </ul>
 </li>
 </ul>
@@ -82,7 +86,38 @@
 <div role="main">
 <div class="section">
 <h1 id="ezedr">ezEDR</h1>
-<p>Docs main</p>
+<p><strong>ezEDR is a drop in solution for quickly getting started with event sourcing.</strong></p>
+<h2 id="why-ezedr">Why ezEDR?</h2>
+<p>Event sourcing is a design pattern where the application state is stored as a
+series of events in an <em>append only</em> log, rather than in a mutable store as it
+is done in other models such as regular CRUD applications. This has a few
+benefits over the traditional approach.</p>
+<p>When the system is designed right, almost no logic is taking place before any
+event is written to the log. The log is the <em>source of truth</em> and the state is
+calculated from this source <em>after</em> it has been persisted.</p>
+<p>This means that</p>
+<ul>
+<li>the state of the system, and it's history, is very transparent. It is easy to
+  understand why some aggregate has reached a particular state. The system
+  becomes easy to debug!</li>
+<li>we can replay all events to rebuild the current state. This means that we can
+  add new business logic to historical events. We can even correct bugs and
+  replay the entire system. The system becomes more future proof and even has
+  some self healing aspects.</li>
+<li>we get audit logging for free!</li>
+<li>business logic tends to end up in the service layer rather than in the
+  database layer. The business logic, which probably is your most important
+  code, ends up in our version control where it should be. Testing important
+  logic thereby becomes a lot easier and (arguably) more fun to code!</li>
+</ul>
+<p>There are however some drawbacks as well. In particular, setting up event
+sourced systems can be difficult, often requires more upfront design decisions
+in the beginning and the time to "get something working" may be significantly
+longer that with other approaches. <em>This is what ezEDR is trying to solve!</em></p>
+<h2 id="how-it-works">How it works</h2>
+<p>ezEDR is an event store for aggregates. Events are stored with an <code>AggregateId</code>
+and a <code>Version</code>. The system will guarantee that the combination of the
+<code>EventName</code>, the <code>AggregateId</code> and the <code>Version</code> is unique.</p>
 </div>
 </div>
 <footer>
@@ -117,5 +152,5 @@
 </html>
 <!--
 MkDocs version : 1.1.2
-Build Date UTC : 2021-08-03 11:11:42.099235+00:00
+Build Date UTC : 2021-08-03 15:02:08.104516+00:00
 -->
