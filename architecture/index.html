@@ -7,15 +7,15 @@
 <meta content="IE=edge" http-equiv="X-UA-Compatible"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <link href="../img/favicon.ico" rel="shortcut icon"/>
-<title>Server - ezEDR</title>
+<title>Architecture - ezEDR</title>
 <link href="https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700" rel="stylesheet">
 <link href="../css/theme.css" rel="stylesheet"/>
 <link href="../css/theme_extra.css" rel="stylesheet"/>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet"/>
 <script>
     // Current page data
-    var mkdocs_page_name = "Server";
-    var mkdocs_page_input_path = "server.md";
+    var mkdocs_page_name = "Architecture";
+    var mkdocs_page_input_path = "architecture.md";
     var mkdocs_page_url = null;
   </script>
 <script defer="" src="../js/jquery-2.1.1.min.js"></script>
@@ -49,8 +49,18 @@
 <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
 </li>
 </ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal current" href="./">Architecture</a>
+<ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="#client">Client</a>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#server">Server</a>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a>
+<li class="toctree-l3"><a class="reference internal" href="#persistance">Persistance</a>
+</li>
+</ul>
+</li>
+</ul>
 </li>
 </ul>
 <ul>
@@ -70,7 +80,7 @@
 <div aria-label="breadcrumbs navigation" role="navigation">
 <ul class="wy-breadcrumbs">
 <li><a href="..">Docs</a> »</li>
-<li>Server</li>
+<li>Architecture</li>
 <li class="wy-breadcrumbs-aside">
 </li>
 </ul>
@@ -78,11 +88,62 @@
 </div>
 <div role="main">
 <div class="section">
-<h1 id="server">Server</h1>
-<p>General docs about server</p>
+<h1 id="architecture">Architecture</h1>
+<p>ezEDR is designed around a client/server model where the server acts as a API
+proxy in front of a database. The server currently provides a simple REST API
+(intended for internal use) with some logic to enforce optimistic concurrency to
+the event log. The language specific clients(that are not yet implemented) exist
+for two reasons:</p>
+<ol>
+<li>ease of use,</li>
+<li>it decouples the client code from the API.</li>
+</ol>
+<p>The second bullet is important as the API may eventually be replaced by some
+other protocol in the future.</p>
+<h2 id="client">Client</h2>
+<table>
+<thead>
+<tr>
+<th align="left">Language</th>
+<th align="left">Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">Javascript</td>
+<td align="left">Todo</td>
+</tr>
+<tr>
+<td align="left">Java</td>
+<td align="left">Todo</td>
+</tr>
+<tr>
+<td align="left">Rust</td>
+<td align="left">Todo</td>
+</tr>
+<tr>
+<td align="left">Go</td>
+<td align="left">Todo</td>
+</tr>
+<tr>
+<td align="left">Python</td>
+<td align="left">Todo</td>
+</tr>
+</tbody>
+</table>
+<h2 id="server">Server</h2>
+<h3 id="persistance">Persistance</h3>
+<p>Events must be stored somewhere and it doesn't make sense to build a new
+database from scratch. Instead, the ezEDR is designed to use a plugable backend
+for storage. PostgreSQL is used as a storage engine at the time of writing and
+there are plans for MongoDB and possibly Redis down the road.</p>
 </div>
 </div>
 <footer>
+<div aria-label="footer navigation" class="rst-footer-buttons" role="navigation">
+<a class="btn btn-neutral float-right" href="../postgres/" title="Postgres Backend">Next <span class="icon icon-circle-arrow-right"></span></a>
+<a class="btn btn-neutral" href=".." title="Home"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+</div>
 <hr/>
 <div role="contentinfo">
 <!-- Copyright etc -->
@@ -96,6 +157,8 @@
 </div>
 <div aria-label="versions" class="rst-versions" role="note">
 <span class="rst-current-version" data-toggle="rst-current-version">
+<span><a href=".." style="color: #fcfcfc;">« Previous</a></span>
+<span style="margin-left: 15px"><a href="../postgres/" style="color: #fcfcfc">Next »</a></span>
 </span>
 </div>
 <script>var base_url = '..';</script>

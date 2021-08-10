@@ -52,16 +52,32 @@
 <li class="toctree-l2"><a class="reference internal" href="#why-ezedr">Why ezEDR?</a>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#how-it-works">How it works</a>
+<ul>
+<li class="toctree-l3"><a class="reference internal" href="#example">Example</a>
+<ul>
+<li class="toctree-l4"><a class="reference internal" href="#register-a-new-aggregate">Register a new aggregate</a>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#updatepatch-aggregate">Update/patch aggregate</a>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#read-an-aggregate">Read an aggregate</a>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#concurrent-updates">Concurrent updates</a>
+</li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#conclusion">Conclusion</a>
+</li>
+</ul>
 </li>
 </ul>
 </li>
 </ul>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="server/">Server</a>
+<li class="toctree-l1"><a class="reference internal" href="architecture/">Architecture</a>
 </li>
 </ul>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="postgres/">Postgres</a>
+<li class="toctree-l1"><a class="reference internal" href="postgres/">Postgres Backend</a>
 </li>
 </ul>
 </div>
@@ -115,16 +131,180 @@ calculated from this source <em>after</em> it has been persisted.</p>
 <p>There are however some drawbacks as well. In particular, setting up event
 sourced systems can be difficult, often requires more upfront design decisions
 in the beginning and the time to "get something working" may be significantly
-longer that with other approaches. <em>This is what ezEDR is trying to solve!</em></p>
+longer that with other approaches. <strong>This is what ezEDR is trying to solve!</strong></p>
 <h2 id="how-it-works">How it works</h2>
 <p>ezEDR is an event store for aggregates. Events are stored with an <code>AggregateId</code>
 and a <code>Version</code>. The system will guarantee that the combination of the
-<code>EventName</code>, the <code>AggregateId</code> and the <code>Version</code> is unique.</p>
+<code>EventName</code>, the <code>AggregateId</code> and the <code>Version</code> is unique. This leaves room for
+a lot of flexibility when designing a system for end users.</p>
+<h3 id="example">Example</h3>
+<p>Alice and Bob are working with a system where they are registering customers for
+their company. The system is using ezEDR under the hood.</p>
+<h4 id="register-a-new-aggregate">Register a new aggregate</h4>
+<p>Alice begins her day with registering a new customer. To do that she fills in a
+form with the customer's <em>name</em>, <em>address</em> and <em>phone number</em> and hits the <em>Save</em>
+button. This will trigger a sequence of actions:</p>
+<div class="mermaid">sequenceDiagram
+autonumber
+User -&gt;&gt; +App : Post form
+App -&gt;&gt; +ezEDR : Create event
+ezEDR -&gt;&gt; +Store : Create aggregate and persist event
+Store --&gt;&gt; -ezEDR : Success
+ezEDR --&gt;&gt; -App : Return AggregateId and Version
+App --&gt;&gt; -User: Success
+</div>
+<ol>
+<li>Fill in form and hit <strong>Save</strong> button</li>
+<li>Post event <strong>CUSTOMER_CREATED</strong></li>
+<li>Try to persist event with <code>EventName=CUSTOMER_ADDRESS_CREATED</code>, <code>AggregateId=123</code> and
+   <code>Version=0</code></li>
+<li>Success</li>
+<li>Return the <code>AggregateId</code> and <code>Version</code></li>
+<li>Success</li>
+</ol>
+<p>The store now have one record with</p>
+<table>
+<thead>
+<tr>
+<th align="center">AggregateId</th>
+<th align="center">Event</th>
+<th align="center">Version</th>
+<th align="center">Data</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">123</td>
+<td align="center">CUSTOMER_CREATED</td>
+<td align="center">0</td>
+<td align="center"><code>name:John Smith;street:John's Avenue;phone:123456</code></td>
+</tr>
+</tbody>
+</table>
+<h4 id="updatepatch-aggregate">Update/patch aggregate</h4>
+<p>Alice now realize that she added the wrong phone number. It has to be updated!</p>
+<ol>
+<li>Alice updates the field</li>
+<li>The app creates the event <strong>CUSTOMER_PHONE_NUMBER_UPDATED</strong> with the value
+   23456 and posts that to ezEDR</li>
+<li>ezEDR persists the event based on the current version, which is now 0</li>
+<li>The event is successfully persisted and the version is incremented to 1</li>
+<li>ezEDR returns the new version number along with the <code>AggregateId</code></li>
+<li>The app responds back to Alice that the action was successful.</li>
+</ol>
+<p>The store now contains two records</p>
+<table>
+<thead>
+<tr>
+<th align="center">AggregateId</th>
+<th align="center">Event</th>
+<th align="center">Version</th>
+<th align="center">Data</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">123</td>
+<td align="center">CUSTOMER_CREATED</td>
+<td align="center">0</td>
+<td align="center"><code>name:John Smith;street:John's Avenue;phone:123456</code></td>
+</tr>
+<tr>
+<td align="center">123</td>
+<td align="center">CUSTOMER_PHONE_NUMBER_UPDATED</td>
+<td align="center">1</td>
+<td align="center"><code>phone:234567</code></td>
+</tr>
+</tbody>
+</table>
+<h4 id="read-an-aggregate">Read an aggregate</h4>
+<p>Bob is also working with the same customer. He opens the customer page to read
+the customer aggregate:</p>
+<ol>
+<li>Bob requests the aggregate with <code>AggregateId=123</code></li>
+<li>The propagates this command to ezEDR</li>
+<li>ezEDR fetches all events associated with the aggregate</li>
+<li>The storage backend returns the events</li>
+<li>The app is reducing all the events to one aggregated view. <strong>This is we expect
+   to find most of the business logic.</strong></li>
+<li>Return the aggregated view where to Bob.</li>
+</ol>
+<p>The current state of the aggregate and the aggregated view in this example is now
+<code>name: John Smith;street:John's Avenue;phone:234567</code>.</p>
+<h4 id="concurrent-updates">Concurrent updates</h4>
+<p>Alice and Bob now both have a view of the aggregate (customer address) with
+<code>Version=1</code> in front of them. Alice realize that she has forgot to add John's
+middle name, which is Allen. At the same time Bob notice that the address is
+missing the street number, which is 12. They both updates the value at the same
+time.</p>
+<p>When Alice is updating the customer name an event called
+<strong>CUSTOMER_NAME_UPDATED</strong> is created by the app and posted to ezEDR with
+<code>Version=1</code>. At the same time the app is creating the event
+<strong>CUSTOMER_STREET_UPDATED</strong> with <code>Version=1</code> from Bob's update.</p>
+<p>One request must hit the server before the other, so let us suppose that Alice's
+request won the race. Whoever got first in this case doesn't matter. Both
+requests will succeed, <em>even though Bob's request is based on an outdated
+version</em>, since <strong>ezEDR only leaves the guarantee that the
+combination of <code>AggregateId</code>, <code>EventName</code> and <code>Version</code> must be unique</strong>. This
+is exactly what we want! If we play our cards right, we will have a system
+with optimistic concurrency that is very tolerant to change at a very low risk
+of conflicts due to updates. This will make our users happy.</p>
+<p>The app will in this case receive a response with <code>AggregateId=123</code> and
+<code>Version=2</code> from Alice's request and a response with <code>AggregateId=123</code> and
+<code>Version=3</code> from Bob's request.</p>
+<p>The current state is now</p>
+<table>
+<thead>
+<tr>
+<th align="center">AggregateId</th>
+<th align="center">Event</th>
+<th align="center">Version</th>
+<th align="center">Data</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">123</td>
+<td align="center">CUSTOMER_CREATED</td>
+<td align="center">0</td>
+<td align="center"><code>name:John Smith;street:John's Avenue;phone:123456</code></td>
+</tr>
+<tr>
+<td align="center">123</td>
+<td align="center">CUSTOMER_PHONE_NUMBER_UPDATED</td>
+<td align="center">1</td>
+<td align="center"><code>phone:234567</code></td>
+</tr>
+<tr>
+<td align="center">123</td>
+<td align="center">CUSTOMER_NAME_UPDATED</td>
+<td align="center">2</td>
+<td align="center"><code>name:John Allen Smith</code></td>
+</tr>
+<tr>
+<td align="center">123</td>
+<td align="center">CUSTOMER_STREET_UPDATED</td>
+<td align="center">3</td>
+<td align="center"><code>street:John's Avenue 12</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="conclusion">Conclusion</h3>
+<blockquote>
+<p>The combination of <code>AggregateId</code>, <code>EventName</code> and <code>Version</code> must be unique!</p>
+</blockquote>
+<p>This leads to the following properties if ezEDR:</p>
+<ul>
+<li>Optimistic concurrency with low risk of conflicts</li>
+<li>A gap in the version sequence (e.g. caused by a conflict) doesn't matter since
+  updating an aggregate based on an old version is fine as long as the guarantee
+  by ezEDR is satisfied.</li>
+</ul>
 </div>
 </div>
 <footer>
 <div aria-label="footer navigation" class="rst-footer-buttons" role="navigation">
-<a class="btn btn-neutral float-right" href="server/" title="Server">Next <span class="icon icon-circle-arrow-right"></span></a>
+<a class="btn btn-neutral float-right" href="architecture/" title="Architecture">Next <span class="icon icon-circle-arrow-right"></span></a>
 </div>
 <hr/>
 <div role="contentinfo">
@@ -139,7 +319,7 @@ and a <code>Version</code>. The system will guarantee that the combination of th
 </div>
 <div aria-label="versions" class="rst-versions" role="note">
 <span class="rst-current-version" data-toggle="rst-current-version">
-<span style="margin-left: 15px"><a href="server/" style="color: #fcfcfc">Next »</a></span>
+<span style="margin-left: 15px"><a href="architecture/" style="color: #fcfcfc">Next »</a></span>
 </span>
 </div>
 <script>var base_url = '.';</script>
@@ -150,9 +330,9 @@ and a <code>Version</code>. The system will guarantee that the combination of th
             SphinxRtdTheme.Navigation.enable(true);
         };
     </script>
-</body>
+<script src="https://unpkg.com/mermaid@8.8.0/dist/mermaid.min.js"></script><script>mermaid.initialize({});</script></body>
 </html>
 <!--
 MkDocs version : 1.1.2
-Build Date UTC : 2021-08-03 15:07:54.010452+00:00
+Build Date UTC : 2021-08-10 16:33:00.661752+00:00
 -->
