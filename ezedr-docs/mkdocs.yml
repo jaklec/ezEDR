@@ -1,8 +1,8 @@
 site_name: ezEDR
 nav:
   - Home: index.md
-  - Server: server.md
-  - Postgres: postgres.md
+  - Architecture: architecture.md
+  - Postgres Backend: postgres.md
 plugins:
   - mermaid2
   - search
