@@ -2,10 +2,10 @@
   "name": "@jaklec/ezedr-core",
   "version": "0.0.1",
   "description": "",
-  "main": "target/index.js",
-  "typings": "target/index.d.ts",
+  "main": "lib/index.js",
+  "typings": "lib/index.d.ts",
   "files": [
-    "target"
+    "lib"
   ],
   "scripts": {
     "test": "LOG_LEVEL=silent jest --detectOpenHandles --passWithNoTests --config ./jest.config.js",
@@ -13,7 +13,7 @@
     "lint": "eslint ./src --ext ts",
     "lint:fix": "npm run lint --fix",
     "check": "npm run lint && prettier --check 'src/**/*.ts'",
-    "clean": "rm -rf target",
+    "clean": "rm -rf lib",
     "prebuild": "npm run clean",
     "build": "tsc"
   },

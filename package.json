@@ -5,7 +5,7 @@
     "./ezedr-core",
     "./ezedr-server",
     "./ezedr-postgres",
-    "./ezedr-docker/postgres"
+    "./ezedr-runners/postgres"
   ],
   "license": "MIT",
   "scripts": {

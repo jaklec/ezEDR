@@ -1,10 +1,10 @@
 {
-  "name": "@jaklec/ezedr-docker-postgres",
+  "name": "@jaklec/ezedr-runner-postgres",
   "version": "1.0.0",
   "description": "",
   "main": "main.js",
   "scripts": {
-    "dev": "node main.js | pino-pretty",
+    "dev": "node main-dev.js | pino-pretty",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

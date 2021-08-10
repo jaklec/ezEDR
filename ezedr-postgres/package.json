@@ -2,9 +2,9 @@
   "name": "@jaklec/ezedr-postgres",
   "version": "0.0.1",
   "description": "",
-  "main": "target/index.js",
+  "main": "lib/index.js",
   "files": [
-    "target"
+    "lib"
   ],
   "scripts": {
     "test": "LOG_LEVEL=silent jest --detectOpenHandles --passWithNoTests --config ./jest.config.js",
@@ -15,7 +15,7 @@
     "lint": "eslint ./src --ext ts",
     "lint:fix": "npm run lint --fix",
     "check": "npm run lint && prettier --check 'src/**/*.ts'",
-    "clean": "rm -rf target tsconfig.tsbuildinfo",
+    "clean": "rm -rf lib tsconfig.tsbuildinfo",
     "build": "tsc",
     "cleanbuild": "npm run clean && npm run build"
   },
