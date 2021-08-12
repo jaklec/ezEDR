@@ -37,10 +37,7 @@ export type CommitResponse = {
   timestamp: number;
 };
 
-/**
- * A repository for easy writes and reads from the log.
- */
-export interface Repository {
+export interface SaveInstruction {
   /**
    * Save an event to the log using an `Instruction` that represents the event,
    * the aggregate and its current version.
@@ -49,7 +46,9 @@ export interface Repository {
    * @returns A promise with `CommitResponse`
    */
   save: <T>(instr: Instruction<T>) => Promise<CommitResponse>;
+}
 
+export interface ReadAggregate {
   /**
    * Read events associated to an aggregate. The result is a (optionally
    * paginated) list with some extra meta data added.
@@ -67,6 +66,40 @@ export interface Repository {
     readOpts?: ReadOpts
   ) => Promise<ListResult>;
 }
+
+export type Repository = SaveInstruction & ReadAggregate;
+// export interface Repository extends SaveInstruction, ReadAggregate {}
+
+// /**
+//  * A repository for easy writes and reads from the log.
+//  */
+// export interface Repository {
+//   /**
+//    * Save an event to the log using an `Instruction` that represents the event,
+//    * the aggregate and its current version.
+//    *
+//    * @param instr An `Instruction<T>` to save an event to the log.
+//    * @returns A promise with `CommitResponse`
+//    */
+//   save: <T>(instr: Instruction<T>) => Promise<CommitResponse>;
+
+//   /**
+//    * Read events associated to an aggregate. The result is a (optionally
+//    * paginated) list with some extra meta data added.
+//    *
+//    * This function could be used to build views of the the current state for an
+//    * aggregate or displaying audit logs.
+//    *
+//    * @param aggregateId The `AggregateId` that identifies the aggregate.
+//    * @param readOpts optional configuration to enable pagination by setting the
+//    * page size (`limit`) and version (`fromVersion`). The latter may also be
+//    * useful with snapshots.
+//    */
+//   readAggregate: (
+//     aggregateId: AggregateId,
+//     readOpts?: ReadOpts
+//   ) => Promise<ListResult>;
+// }
 
 /**
  * List of all events associated with the aggregate.

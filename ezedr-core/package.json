@@ -13,9 +13,10 @@
     "lint": "eslint ./src --ext ts",
     "lint:fix": "npm run lint --fix",
     "check": "npm run lint && prettier --check 'src/**/*.ts'",
-    "clean": "rm -rf lib",
-    "prebuild": "npm run clean",
-    "build": "tsc"
+    "clean": "rm -rf lib tsconfig.tsbuildinfo",
+    "build": "tsc",
+    "preclean:build": "npm run clean",
+    "clean:build": "npm run build"
   },
   "keywords": [],
   "author": "",

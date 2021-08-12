@@ -1,18 +1,9 @@
-import fastify, { FastifyInstance, FastifyRequest } from "fastify";
+import fastify, { FastifyInstance } from "fastify";
 import { v4 as uuid } from "uuid";
 import { Repository } from "@jaklec/ezedr-core";
-import { healthCheckRoute } from "./healthcheck";
-import { registerRoute } from "./registerAggregateRoute";
-
-/**
- * Request-id generator.
- * This function will reuse any `x-request-id` headers from the incoming
- * request. If no such header exist it will generate a new unique header.
- */
-function genReqId(request: FastifyRequest) {
-  const reqId = request.headers["x-request-id"] as string;
-  return reqId ?? uuid();
-}
+import { healthCheckRoute } from "./health";
+import { routeDef } from "./aggregate";
+import { genReqId, appendRequestIdHeader } from "./requestId";
 
 /**
  * Create a server instance of ezEDR.
@@ -27,13 +18,20 @@ function server(repo: Repository): FastifyInstance {
     genReqId,
   });
 
-  api.addHook("onRequest", (request, reply, done) => {
-    reply.header("x-request-id", request.id);
-    done();
+  appendRequestIdHeader(api);
+
+  api.register(async (api) => healthCheckRoute(api), {
+    prefix: "/health",
   });
 
-  api.route(healthCheckRoute);
-  api.route(registerRoute(repo));
+  api.register(
+    async (api) => {
+      return routeDef(api, { repository: repo, idGenerator: () => uuid() });
+    },
+    {
+      prefix: "/aggregates",
+    }
+  );
 
   return api;
 }
