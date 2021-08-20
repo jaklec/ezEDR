@@ -1,10 +1,7 @@
+import { SaveInstruction } from "@jaklec/ezedr-core";
 import { Pool, QueryResult } from "pg";
-import { AggregateId, Repository, Version } from "@jaklec/ezedr-core";
 import { Client, createClient, createRepository } from "../src/repository";
 
-/*
- * End to end test for reading operations against the log.
- */
 describe("e2e: Event Reader", () => {
   const dbPool: Pool = new Pool({
     host: "localhost",
@@ -16,28 +13,28 @@ describe("e2e: Event Reader", () => {
 
   const client: Client = createClient(dbPool);
 
-  const repository: Repository = createRepository(client);
+  const repository = createRepository(client);
 
   const orderCreated = {
-    event: "ORDER_WAS_CREATED",
+    eventName: "ORDER_WAS_CREATED",
     baseVersion: -1,
-    version: 0,
     committer: "test-user",
-    data: JSON.stringify({ drink: "milk", food: "pasta" }),
+    payload: JSON.stringify({ drink: "milk", food: "pasta" }),
+    info: "protocol: json",
   };
   const drinkUpdated = {
-    event: "ORDER_DRINK_WAS_UPDATED",
+    eventName: "ORDER_DRINK_WAS_UPDATED",
     baseVersion: 0,
-    version: 1,
     committer: "test-user",
-    data: JSON.stringify({ drink: "wine" }),
+    payload: JSON.stringify({ drink: "wine" }),
+    info: "protocol: json",
   };
   const foodUpdated = {
-    event: "ORDER_FOOD_WAS_UPDATED",
+    eventName: "ORDER_FOOD_WAS_UPDATED",
     baseVersion: 1,
-    version: 2,
     committer: "test-user",
-    data: JSON.stringify({ food: "sushi" }),
+    payload: JSON.stringify({ food: "sushi" }),
+    info: "protocol: json",
   };
 
   beforeEach(async () => {
@@ -55,30 +52,36 @@ describe("e2e: Event Reader", () => {
    */
   test("Read all event associated with an aggregate", async () => {
     expect.assertions(2);
+    try {
+      // Insert three events into the log
+      await insertEventRecord(dbPool, {
+        ...orderCreated,
+        eventId: "e0",
+        streamId: "s0",
+        tenant: "default",
+      });
+      await insertEventRecord(dbPool, {
+        ...orderCreated,
+        eventId: "e1",
+        streamId: "s1",
+        tenant: "default",
+      });
+      await insertEventRecord(dbPool, {
+        ...drinkUpdated,
+        eventId: "e2",
+        streamId: "s0",
+        tenant: "default",
+      });
 
-    // Insert three events into the log
-    await insertEventRecord(dbPool, {
-      ...orderCreated,
-      aggregateId: "123",
-      timestamp: Date.now(),
-    });
-    await insertEventRecord(dbPool, {
-      ...orderCreated,
-      aggregateId: "456",
-      timestamp: Date.now(),
-    });
-    await insertEventRecord(dbPool, {
-      ...drinkUpdated,
-      aggregateId: "123",
-      timestamp: Date.now(),
-    });
+      // Execute!
+      const events = await repository.readStream("s0", "default");
 
-    // Execute!
-    const events = await repository.readAggregate("123");
-
-    // We should only have two events at this point
-    expect(events.aggregateId).toBe("123");
-    expect(events.events.length).toBe(2);
+      // We should only have two events at this point
+      expect(events.streamId).toBe("s0");
+      expect(events.events.length).toBe(2);
+    } catch (err) {
+      console.log(err);
+    }
   });
 
   /*
@@ -90,16 +93,17 @@ describe("e2e: Event Reader", () => {
 
     await insertEventRecord(dbPool, {
       ...orderCreated,
-      aggregateId: "123",
-      timestamp: Date.now(),
+      eventId: "e0",
+      streamId: "s0",
+      tenant: "default",
     });
     await insertEventRecord(dbPool, {
       ...drinkUpdated,
-      aggregateId: "123",
-      timestamp: Date.now(),
+      eventId: "e2",
+      streamId: "s0",
+      tenant: "default",
     });
-
-    const events = await repository.readAggregate("123");
+    const events = await repository.readStream("s0", "default");
 
     expect(events.events[0].version).toBe(0);
     expect(events.events[1].version).toBe(1);
@@ -116,16 +120,19 @@ describe("e2e: Event Reader", () => {
 
     await insertEventRecord(dbPool, {
       ...orderCreated,
-      aggregateId: "123",
-      timestamp: Date.now(),
+      eventId: "e0",
+      streamId: "s0",
+      tenant: "default",
     });
     await insertEventRecord(dbPool, {
       ...drinkUpdated,
-      aggregateId: "123",
-      timestamp: Date.now(),
+      eventId: "e2",
+      streamId: "s0",
+      tenant: "default",
     });
-
-    const events = await repository.readAggregate("123", { fromVersion: 1 });
+    const events = await repository.readStream("s0", "default", {
+      fromVersion: 1,
+    });
 
     expect(events.events.length).toBe(1);
     expect(events.events[0].version).toBe(1);
@@ -141,21 +148,24 @@ describe("e2e: Event Reader", () => {
 
     await insertEventRecord(dbPool, {
       ...orderCreated,
-      aggregateId: "123",
-      timestamp: Date.now(),
+      eventId: "e0",
+      streamId: "s0",
+      tenant: "default",
     });
     await insertEventRecord(dbPool, {
       ...drinkUpdated,
-      aggregateId: "123",
-      timestamp: Date.now(),
+      eventId: "e2",
+      streamId: "s0",
+      tenant: "default",
     });
     await insertEventRecord(dbPool, {
       ...foodUpdated,
-      aggregateId: "123",
-      timestamp: Date.now(),
+      eventId: "e3",
+      streamId: "s0",
+      tenant: "default",
     });
 
-    const page0 = await repository.readAggregate("123", {
+    const page0 = await repository.readStream("s0", "default", {
       limit: 2,
     });
 
@@ -163,7 +173,7 @@ describe("e2e: Event Reader", () => {
     expect(page0.events[0].version).toBe(0);
     expect(page0.events[1].version).toBe(1);
 
-    const page1 = await repository.readAggregate("123", {
+    const page1 = await repository.readStream("s0", "default", {
       limit: 2,
       fromVersion: 2,
     });
@@ -173,38 +183,34 @@ describe("e2e: Event Reader", () => {
   });
 });
 
-type EventData = {
-  aggregateId: AggregateId;
-  event: string;
-  baseVersion: Version;
-  version: Version;
-  timestamp: number;
-  committer: string;
-  data: string;
-};
-
 function insertEventRecord(
   client: Pool,
-  data: EventData
+  data: SaveInstruction
 ): Promise<QueryResult> {
   return client.query(
     `INSERT INTO "events" (
-        "aggregate_id", 
-        "event", 
+        "event_id", 
+        "stream_id", 
+        "tenant_id",
+        "event",
         "base_version", 
         "version", 
         "timestamp", 
         "committer", 
-        "data") 
-                 VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+        "payload",
+        "info") 
+                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
     [
-      data.aggregateId,
-      data.event,
+      data.eventId,
+      data.streamId,
+      data.tenant,
+      data.eventName,
       data.baseVersion,
-      data.version,
-      data.timestamp,
+      data.baseVersion + 1,
+      Date.now(),
       data.committer,
-      data.data,
+      data.payload,
+      data.info,
     ]
   );
 }

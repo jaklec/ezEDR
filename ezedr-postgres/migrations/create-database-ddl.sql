@@ -1,18 +1,23 @@
-CREATE TABLE IF NOT EXISTS "versions" (
-  "aggregate_id" VARCHAR NOT NULL,
-  "version" INT NOT NULL,
-  CONSTRAINT "versions_pk" PRIMARY KEY ("aggregate_id")
-);
-
 CREATE TABLE IF NOT EXISTS "events" (
-  "aggregate_id" VARCHAR NOT NULL,
+  "event_id" VARCHAR NOT NULL,
+  "stream_id" VARCHAR NOT NULL,
+  "tenant_id" VARCHAR NOT NULL,
   "event" VARCHAR NOT NULL,
-  "sequence_number" BIGSERIAL,
   "base_version" INT NOT NULL,
   "version" INT NOT NULL,
+  "sequence_number" BIGSERIAL,
   "timestamp" BIGINT NOT NULL,
   "committer" VARCHAR NOT NULL,
-  "data" TEXT,
-  /* "hash" VARCHAR NOT NULL, */
-  CONSTRAINT "events_pk" PRIMARY KEY ("aggregate_id", "base_version", "event")
+  "payload" TEXT,
+  "info" VARCHAR,
+  CONSTRAINT "log_pk" PRIMARY KEY ("event_id"),
+  CONSTRAINT "unq_str_ten_bver" UNIQUE("stream_id", "tenant_id", "base_version")
+);
+
+CREATE TABLE IF NOT EXISTS "streams" (
+  "stream_id" VARCHAR NOT NULL,
+  "tenant_id" VARCHAR NOT NULL,
+  "version_seq" INT NOT NULL,
+  CONSTRAINT "streams_pk" PRIMARY KEY ("stream_id"),
+  CONSTRAINT "unq_str_ten" UNIQUE("stream_id", "tenant_id")
 );

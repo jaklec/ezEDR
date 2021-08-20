@@ -38,6 +38,8 @@ longer that with other approaches. **This is what ezEDR is trying to solve!**
 
 ## How it works
 
+**This documentation is currently outdated!**
+
 ezEDR is an event store for aggregates. Events are stored with an `AggregateId`
 and a `Version`. The system will guarantee that the combination of the
 `EventName`, the `AggregateId` and the `Version` is unique. This leaves room for

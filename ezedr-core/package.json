@@ -16,7 +16,7 @@
     "clean": "rm -rf lib tsconfig.tsbuildinfo",
     "build": "tsc",
     "preclean:build": "npm run clean",
-    "clean:build": "npm run build"
+    "cleanbuild": "npm run build"
   },
   "keywords": [],
   "author": "",

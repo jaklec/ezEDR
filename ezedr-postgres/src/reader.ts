@@ -1,27 +1,29 @@
 import { Client } from "./repository";
-import { AggregateId, ListResult, ReadOpts } from "@jaklec/ezedr-core";
+import { ReadOpts, ReadStreamResult, EventRow } from "@jaklec/ezedr-core";
 
 /**
- * Read all log entries that builds the aggregate. This function could be used
+ * Read all events posted to a stream. This function could be used
  * to build views of the the current state for an aggregate or displaying audit
  * logs.
  *
  * @param client `Client` postgres connection pool
- * @param aggregateId `AggregateId`
+ * @param streamId The id of the stream
+ * @param tenant The 'owner' of the stream
  * @param readOpts Optional options to filter the search.
  *
- * @returns Promise with all events associated with the aggregate with some meta
+ * @returns Promise with all events associated with the stream with some meta
  * information.
  */
-export async function readAggregate(
+export async function readStream(
   client: Client,
-  aggregateId: AggregateId,
+  streamId: string,
+  tenant: string,
   readOpts?: ReadOpts
-): Promise<ListResult> {
+): Promise<ReadStreamResult> {
   let i = 1;
-  let sqlQuery = `SELECT * FROM "events" WHERE "aggregate_id" = $${i}`;
+  let sqlQuery = `SELECT * FROM "events" WHERE "stream_id" = $${i} AND "tenant_id" = $${++i}`;
 
-  const params: unknown[] = [aggregateId];
+  const params: unknown[] = [streamId, tenant];
 
   if (readOpts?.fromVersion) {
     sqlQuery += ` AND "version" >= $${++i}`;
@@ -36,17 +38,23 @@ export async function readAggregate(
   }
 
   return client.query(sqlQuery, params).then((res) => {
-    const events = res.rows.map((row) => ({
+    const events: EventRow[] = res.rows.map((row) => ({
+      eventId: row.event_id,
       version: row.version,
-      event: row.event,
-      data: row.data,
-      committer: row.committer,
       timestamp: row.timestamp,
+      committer: row.committer,
+      type: row.event,
+      payload: row.payload,
+      info: row.info,
     }));
 
     return {
-      aggregateId,
-      fromVersion: readOpts?.fromVersion || 0,
+      streamId,
+      tenant,
+      page: {
+        fromVersion: readOpts?.fromVersion || 0,
+        limit: readOpts?.limit,
+      },
       events,
     };
   });

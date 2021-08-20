@@ -1,13 +1,39 @@
 import {
-  AggregateId,
-  CommitResponse,
-  Instruction,
+  InitStreamInstruction,
+  InitStreamResponse,
+  SaveInstruction,
+  SaveResponse,
   Version,
 } from "@jaklec/ezedr-core";
 import { Client } from "./repository";
 
 /**
- * Write events to the log using optimistic concurrency.
+ * Initialize/create a new stream. This basically means initialize a new stream
+ * with `currentVersion` set to -1.
+ *
+ * @param client Postgres connection pool
+ * @param instr `InitStreamInstruction` which contains `streamId` and `tenant`
+ *
+ * @returns `streamId`, `tenant` and `version`
+ */
+export async function initStream(
+  client: Client,
+  instr: InitStreamInstruction
+): Promise<InitStreamResponse> {
+  const { streamId, tenant } = instr;
+  const rs = await client.query(
+    `INSERT INTO "streams"("stream_id", "tenant_id", "version_seq") VALUES($1,$2,$3) RETURNING streams.version_seq`,
+    [streamId, tenant, -1]
+  );
+  return {
+    streamId,
+    tenant,
+    version: rs.rows[0].version_seq,
+  };
+}
+
+/**
+ * Write events to the event log using optimistic concurrency.
  *
  * The client is responsible for providing the aggregate id and the current
  * version. This version number is regarded as the `baseVersion` internally and
@@ -20,132 +46,115 @@ import { Client } from "./repository";
  * Any failure to commit the event will result in a jump in the version
  * sequence. This is fine and will not affect the algorithm.
  *
- * A precondition for the algorithm to work is that there is a unique constraint
- * in the database on `aggregateId`, `baseVersion` and `event`.
- *
  * @param client Postgres connection pool
- * @param instr `Instruction` which contains all data necessary to create a log
- * record.
+ * @param instr `SaveInstruction` which contains all data necessary to log an event
  *
- * @returns Promise with `CommitResponse` which contains aggregate id and
- * current version number.
+ * @returns Promise with `SaveResponse` which contains all information needed to
+ * identify and work with the event (`eventId`, `streamId`, `tenant`,
+ * `currentVersion`)
  */
-export async function write<T>(
+export async function write(
   client: Client,
-  instr: Instruction<T>
-): Promise<CommitResponse> {
-  const { aggregateId, event, committer, data } = instr;
-
+  instr: SaveInstruction
+): Promise<SaveResponse> {
   const baseVersion = normalizeBaseVersion(instr.baseVersion);
 
-  const version = await incrVersion(client, {
-    aggregateId,
-    version: baseVersion,
+  const version = await nextVersion(client, {
+    streamId: instr.streamId,
+    tenant: instr.tenant,
   });
 
   return writeEvent(client, {
-    aggregateId,
-    event,
+    ...instr,
     baseVersion,
     version,
-    committer,
-    data,
   });
 }
 
+/**
+ * If the `baseVersion` is not defined or less than 0, we should set it to -1.
+ *
+ * @param version version number candidate
+ *
+ * @returns normalized version number.
+ */
 function normalizeBaseVersion(version?: Version): Version {
   return version !== undefined && version >= 0 ? version : -1;
 }
 
 /**
- * Write the version to the `versions` table.
- * This function is accepting any version greater than or equal
- * to 0. If the version is 0 a new record is created. Otherwise the existing version
- * is incremented. The value return should be considered a version number of a
- * commit candidate.
+ * Increment and get the next version associated with a stream.
  *
  * @param client Postgres connection pool
- * @param opts `AggregateId` and `Version` of the event.
+ * @param opts contains `streamId` and `tenant`
  *
- * @returns Promise with new version number
+ * @returns a Promise with the new version number.
  */
-async function incrVersion(
+async function nextVersion(
   client: Client,
-  opts: {
-    aggregateId: AggregateId;
-    version: Version;
-  }
+  opts: { streamId: string; tenant: string }
 ): Promise<Version> {
-  const { aggregateId, version } = opts;
-
-  if (version < 0) {
-    const rs = await client.query(
-      `INSERT INTO "versions"("aggregate_id","version") VALUES($1,$2) RETURNING versions.version`,
-      [aggregateId, 0]
-    );
-    return rs.rows[0].version;
-  } else {
-    const rs = await client.query(
-      `UPDATE "versions" SET version = versions.version + 1 WHERE "aggregate_id" = $1 RETURNING versions.version`,
-      [aggregateId]
-    );
-    const firstRow = rs.rows[0];
-    if (firstRow) {
-      return firstRow.version;
-    }
-
-    throw new Error(
-      "Failed to update aggregate version. Check that it exists and that your are providing correct base version information!"
-    );
+  const rs = await client.query(
+    `UPDATE "streams" SET version_seq = streams.version_seq + 1 WHERE "stream_id" = $1 AND "tenant_id" = $2 RETURNING streams.version_seq`,
+    [opts.streamId, opts.tenant]
+  );
+  const firstRow = rs.rows[0];
+  if (firstRow) {
+    return firstRow.version_seq;
   }
+
+  throw new Error(
+    "Failed to update stream version. Check that it exists and that your are providing correct base version information!"
+  );
 }
 
 /**
- * Write an event to the log.
+ * Append an event to a stream.
  *
  * @param client Postgres connection pool
- * @param opts `EventOptions` contains all information needed to persist an
+ * @param opts all information needed to persist an
  * event record to the log.
  *
- * @returns Promise with a `CommitResponse`.
+ * @returns Promise with `SaveResponse` which contains all information needed to
+ * identify and work with the event (`eventId`, `streamId`, `tenant`,
+ * `currentVersion`)
  */
-async function writeEvent<T>(
+async function writeEvent(
   client: Client,
   opts: {
-    aggregateId: AggregateId;
-    event: string;
-    baseVersion: Version;
-    version: Version;
+    eventId: string;
+    streamId: string;
+    tenant: string;
+    baseVersion: number;
+    version: number;
     committer: string;
-    data: T;
+    eventName: string;
+    payload?: string;
+    info?: string;
   }
-): Promise<CommitResponse> {
+): Promise<SaveResponse> {
   return client
     .query(
-      `INSERT INTO "events" ("aggregate_id", "event", "base_version", "version", "timestamp", "committer", "data")
-      VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING "aggregate_id", "version", "timestamp"`,
+      `INSERT INTO "events" ("event_id", "stream_id", "tenant_id", "base_version", "version", "event", "committer", "payload", "info", "timestamp")
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING "event_id", "stream_id", "tenant_id", "version"`,
       [
-        opts.aggregateId,
-        opts.event,
+        opts.eventId,
+        opts.streamId,
+        opts.tenant,
         opts.baseVersion,
         opts.version,
-        Date.now(),
+        opts.eventName,
         opts.committer,
-        opts.data,
+        opts.payload,
+        opts.info,
+        Date.now(),
       ]
     )
     .then((res) => res.rows[0])
     .then((row) => ({
-      aggregateId: row.aggregate_id,
+      eventId: row.event_id,
+      streamId: row.stream_id,
+      tenant: row.tenant_id,
       currentVersion: row.version,
-      timestamp: row.timestamp,
-    }))
-    .catch((err) => {
-      if (err.code === "23505" /* duplicate key violation */) {
-        throw new Error(`Concurrency Error: ${err.message} - ${err.detail}`);
-        // throw new EdrConcurrencyError(`${err.message} - ${err.detail}`);
-      } else {
-        throw err;
-      }
-    });
+    }));
 }

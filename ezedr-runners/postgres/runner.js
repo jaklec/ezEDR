@@ -10,12 +10,12 @@ const postgres = new Pool({
   database: process.env.PGDATABASE || "ezedr",
 });
 
-const repository = createRepository(createClient(postgres));
+// const repository = createRepository(createClient(postgres));
 
 const port = process.env.PORT || "8080";
 const address = process.env.ADDRESS || "0.0.0.0";
 
-const edr = server(repository);
+const edr = server(createRepository(createClient(postgres)));
 
 function shutdown() {
   postgres.end();

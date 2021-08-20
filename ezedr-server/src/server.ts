@@ -1,9 +1,8 @@
 import fastify, { FastifyInstance } from "fastify";
-import { v4 as uuid } from "uuid";
 import { Repository } from "@jaklec/ezedr-core";
 import { healthCheckRoute } from "./health";
-import { routeDef } from "./aggregate";
-import { genReqId, appendRequestIdHeader } from "./requestId";
+import { createStreamRoute } from "./stream";
+import { genReqId, generateId, appendRequestIdHeader } from "./requestId";
 
 /**
  * Create a server instance of ezEDR.
@@ -16,8 +15,14 @@ function server(repo: Repository): FastifyInstance {
   const api = fastify({
     logger: { level: process.env.LOG_LEVEL },
     genReqId,
+    ajv: {
+      customOptions: {
+        allErrors: true,
+        removeAdditional: true,
+        coerceTypes: false,
+      },
+    },
   });
-
   appendRequestIdHeader(api);
 
   api.register(async (api) => healthCheckRoute(api), {
@@ -26,10 +31,13 @@ function server(repo: Repository): FastifyInstance {
 
   api.register(
     async (api) => {
-      return routeDef(api, { repository: repo, idGenerator: () => uuid() });
+      return createStreamRoute(api, {
+        repository: repo,
+        idGenerator: generateId,
+      }).setValidatorCompiler;
     },
     {
-      prefix: "/aggregates",
+      prefix: "/streams",
     }
   );
 

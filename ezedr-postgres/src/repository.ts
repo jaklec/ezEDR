@@ -1,15 +1,15 @@
 import { Pool, QueryResult } from "pg";
-import { readAggregate } from "./reader";
+import { readStream } from "./reader";
 import {
-  AggregateId,
-  CommitResponse,
-  Instruction,
-  ListResult,
-  ReadOpts,
+  InitStreamInstruction,
+  InitStreamResponse,
+  ReadStreamResult,
   Repository,
+  SaveInstruction,
+  SaveResponse,
 } from "@jaklec/ezedr-core";
 
-import { write } from "./writer";
+import { initStream, write } from "./writer";
 
 /**
  * Wrapper around Postgres connection pool.
@@ -40,11 +40,12 @@ export function createClient(pool: Pool): Client {
  */
 export function createRepository(client: Client): Repository {
   return {
-    save: async <T>(instr: Instruction<T>): Promise<CommitResponse> =>
+    initStream: async (
+      instr: InitStreamInstruction
+    ): Promise<InitStreamResponse> => initStream(client, instr),
+    save: async (instr: SaveInstruction): Promise<SaveResponse> =>
       write(client, instr),
-    readAggregate: async (
-      aggregateId: AggregateId,
-      readOpts?: ReadOpts
-    ): Promise<ListResult> => readAggregate(client, aggregateId, readOpts),
+    readStream: async (streamId, tenant, opts): Promise<ReadStreamResult> =>
+      readStream(client, streamId, tenant, opts),
   };
 }
