@@ -3,8 +3,8 @@
 ezEDR is designed around a client/server model where the server acts as a API
 proxy in front of a database. The server currently provides a simple REST API
 (intended for internal use) with some logic to enforce optimistic concurrency to
-the event log. The language specific clients(that are not yet implemented) exist
-for two reasons:
+the event log. The language specific clients (that at the time of writing this
+are not yet implemented) exist for two reasons:
 
 1. ease of use,
 2. it decouples the client code from the API.
