@@ -1,8 +1,9 @@
 import { Pool, QueryResult } from "pg";
-import { readStream } from "./reader";
+import { readEvents, readStream } from "./reader";
 import {
   InitStreamInstruction,
   InitStreamResponse,
+  ReadEventsResult,
   ReadStreamResult,
   Repository,
   SaveInstruction,
@@ -45,7 +46,9 @@ export function createRepository(client: Client): Repository {
     ): Promise<InitStreamResponse> => initStream(client, instr),
     save: async (instr: SaveInstruction): Promise<SaveResponse> =>
       write(client, instr),
-    readStream: async (streamId, tenant, opts): Promise<ReadStreamResult> =>
-      readStream(client, streamId, tenant, opts),
+    readEvents: async (streamId, tenant, opts): Promise<ReadEventsResult> =>
+      readEvents(client, streamId, tenant, opts),
+    readStream: async (streamId, tenant): Promise<ReadStreamResult> =>
+      readStream(client, streamId, tenant),
   };
 }

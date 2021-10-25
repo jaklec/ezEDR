@@ -1,3 +1,4 @@
+import assert from "assert";
 import { Pool } from "pg";
 import {
   InitStreamResponse,
@@ -5,19 +6,6 @@ import {
   SaveInstruction,
 } from "@jaklec/ezedr-core";
 import { Client, createClient, createRepository } from "../src/repository";
-
-// function createRepository(client: Client): Repository {
-//   return {
-//     initStream: async (
-//       instr: InitStreamInstruction
-//     ): Promise<InitStreamResponse> => {
-//       return initStream(client, instr);
-//     },
-//     save: async (instr: SaveInstruction): Promise<SaveResponse> => {
-//       return write2(client, instr);
-//     },
-//   };
-// }
 
 describe("e2e: Event Writer 2", () => {
   const dbPool: Pool = new Pool({
@@ -51,21 +39,19 @@ describe("e2e: Event Writer 2", () => {
     await dbPool.query("TRUNCATE streams");
   });
 
-  afterAll(async () => {
+  after(async () => {
     await dbPool.end();
   });
 
-  test("reject event without valid stream", async () => {
-    expect.assertions(2);
-
-    await expect(repository.save(event)).rejects.toThrow();
+  it("reject event without valid stream", async () => {
+    await assert.rejects(repository.save(event));
 
     const { rowCount } = await dbPool.query(
       'SELECT * FROM "events" WHERE "event_id" = $1',
       [event.eventId]
     );
 
-    expect(rowCount).toBe(0);
+    assert.strictEqual(rowCount, 0);
   });
 
   describe("valid stream", () => {
@@ -78,26 +64,20 @@ describe("e2e: Event Writer 2", () => {
       });
     });
 
-    test("create new stream", async () => {
-      expect.assertions(1);
-
+    it("create new stream", async () => {
       const { rowCount } = await dbPool.query(
         'SELECT * FROM "streams" WHERE "stream_id" = $1',
         ["s0"]
       );
 
-      expect(rowCount).toBe(1);
+      assert.strictEqual(rowCount, 1);
     });
 
-    test("fail to create the same stream twice", async () => {
-      await expect(
-        repository.initStream({ streamId, tenant }) // already created above
-      ).rejects.toThrow();
+    it("fail to create the same stream twice", async () => {
+      await assert.rejects(repository.initStream({ streamId, tenant }));
     });
 
-    test("add event to stream", async () => {
-      expect.assertions(7);
-
+    it("add event to stream", async () => {
       await repository.save(event);
 
       const { rowCount, rows } = await dbPool.query(
@@ -105,16 +85,16 @@ describe("e2e: Event Writer 2", () => {
         [event.eventId]
       );
 
-      expect(rowCount).toBe(1);
-      expect(rows[0].tenant_id).toBe(event.tenant);
-      expect(rows[0].stream_id).toBe(event.streamId);
-      expect(rows[0].committer).toBe(event.committer);
-      expect(rows[0].payload).toBe(event.payload);
-      expect(rows[0].base_version).toBe(event.baseVersion);
-      expect(rows[0].version).toBe(0);
+      assert.strictEqual(rowCount, 1);
+      assert.strictEqual(rows[0].tenant_id, event.tenant);
+      assert.strictEqual(rows[0].stream_id, event.streamId);
+      assert.strictEqual(rows[0].committer, event.committer);
+      assert.strictEqual(rows[0].payload, event.payload);
+      assert.strictEqual(rows[0].base_version, event.baseVersion);
+      assert.strictEqual(rows[0].version, 0);
     });
 
-    test("increment version sequence during save", async () => {
+    it("increment version sequence during save", async () => {
       await repository.save(event);
 
       const { rows } = await dbPool.query(
@@ -122,19 +102,18 @@ describe("e2e: Event Writer 2", () => {
         [streamId]
       );
 
-      expect(rows[0].version_seq).toBe(stream.version + 1);
+      assert.strictEqual(rows[0].version_seq, stream.version + 1);
     });
 
-    test("reject events based on old version", async () => {
+    it("reject events based on old version", async () => {
       await repository.save(event);
       const outdatedEvent = { ...event }; // make a deep copy
-      await expect(repository.save(outdatedEvent)).rejects.toThrow();
+      await assert.rejects(repository.save(outdatedEvent));
     });
 
-    test("rejected events should not stop future saves", async () => {
-      expect.assertions(2);
+    it("rejected events should not stop future saves", async () => {
       await repository.save(event);
-      await expect(repository.save({ ...event })).rejects.toThrow();
+      await assert.rejects(repository.save({ ...event }));
 
       const validEvent = {
         ...event,
@@ -146,14 +125,13 @@ describe("e2e: Event Writer 2", () => {
         'SELECT * FROM "events" WHERE "stream_id" = $1',
         [event.streamId]
       );
-      expect(rowCount).toBe(2);
+      assert.strictEqual(rowCount, 2);
     });
 
-    test("using a baseVersion between valid events should be rejected", async () => {
-      expect.assertions(2);
+    it("using a baseVersion between valid events should be rejected", async () => {
       // First we create a gap in the version sequence
       await repository.save(event); // version=0
-      await expect(repository.save({ ...event })).rejects.toThrow(); // version=1 disqualified
+      await assert.rejects(repository.save({ ...event })); // version=1 disqualified
 
       // version=2
       await repository.save({
@@ -163,14 +141,13 @@ describe("e2e: Event Writer 2", () => {
       });
 
       // Now, let's try to save an event based on version=1
-      await expect(
-        // version=2
+      await assert.rejects(
         repository.save({
           ...event,
           eventId: "e1",
           baseVersion: 1,
         })
-      ).rejects.toThrow();
+      );
     });
   });
 });

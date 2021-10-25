@@ -8,7 +8,6 @@
     "lib"
   ],
   "scripts": {
-    "test": "LOG_LEVEL=silent jest --detectOpenHandles --passWithNoTests --config ./jest.config.js",
     "format": "prettier --write 'src/**/*.ts'",
     "lint": "eslint ./src --ext ts",
     "lint:fix": "npm run lint --fix",
@@ -22,14 +21,11 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@types/jest": "^26.0.24",
     "@types/node": "^16.3.3",
     "@typescript-eslint/eslint-plugin": "^4.28.3",
     "@typescript-eslint/parser": "^4.28.3",
     "eslint": "^7.30.0",
-    "jest": "^27.0.6",
     "prettier": "^2.3.2",
-    "ts-jest": "^27.0.3",
     "ts-node": "^10.1.0",
     "typescript": "^4.3.5"
   }

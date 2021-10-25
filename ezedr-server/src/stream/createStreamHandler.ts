@@ -39,7 +39,7 @@ export function createStreamHandler(
       tenant: tenant || "default",
     });
     reply
-      .status(201)
+      .status(200)
       .header("location", `${request.url}/${response.streamId}`)
       .send({
         streamId: response.streamId,

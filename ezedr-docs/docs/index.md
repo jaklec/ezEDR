@@ -43,3 +43,7 @@ with `Version` number. The version number represents a sequence number for that
 particular stream - or a _version of the aggregate_ i you like. The system will
 guarantee that no event is appended to the stream based on an outdated version of
 that aggregate.
+
+### Example
+
+An example often makes it easier to understand.

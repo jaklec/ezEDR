@@ -102,24 +102,48 @@ export interface SaveToStream {
 }
 
 /**
- * Read an event stream.
+ * The result from reading Stream meta data.
  */
-export interface ReadStream {
+export type ReadStreamResult = {
+  streamId: string;
+  tenant: string;
+  currentVersion: number;
+};
+
+/**
+ * Read stream info.
+ */
+export interface ReadStreamInfo {
   /**
-   * Read an event stream. Use the options to limit the result set.
+   * Read stream meta data.
+   *
+   * @param streamId Stream identifier.
+   * @param tenant The stream tenant.
+   * @returns Promise with `ReadStreamResult`.
+   * @throws `NoSuchResourceError` when the stream doesn't exist.
+   */
+  readStream(streamId: string, tenant: string): Promise<ReadStreamResult>;
+}
+
+/**
+ * Read events from a stream.
+ */
+export interface ReadEvents {
+  /**
+   * Read events from a stream. Use the options to limit the result set.
    *
    * @param streamId
    * @param tenant
-   * @param readStreamOpts limit the result set by providing `limit` (size) and
+   * @param readOpts limit the result set by providing `limit` (size) and
    * `fromVersion`.
    *
-   * @returns Promise with `ReadStreamResult`.
+   * @returns Promise with `ReadEventsResult`.
    */
-  readStream(
+  readEvents(
     streamId: string,
     tenant: string,
-    readStreamOpts?: ReadOpts
-  ): Promise<ReadStreamResult>;
+    readOpts?: ReadOpts
+  ): Promise<ReadEventsResult>;
 }
 
 /**
@@ -136,11 +160,11 @@ export type EventRow = {
 };
 
 /**
- * The result from reading a stream. Contains meta information about the stream,
+ * The result from reading events. Contains meta information about the stream,
  * if the result set represents a slice of the stream and all the events
  * associated with that slice.
  */
-export type ReadStreamResult = {
+export type ReadEventsResult = {
   streamId: string;
   tenant: string;
   page: {
@@ -154,4 +178,7 @@ export type ReadStreamResult = {
  * The `Repository` contains all methods needed to create, write to and read
  * from a stream.
  */
-export type Repository = InitStream & SaveToStream & ReadStream;
+export type Repository = InitStream &
+  SaveToStream &
+  ReadEvents &
+  ReadStreamInfo;

@@ -4,8 +4,7 @@
   "description": "",
   "main": "main.js",
   "scripts": {
-    "dev": "node main-dev.js | pino-pretty",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "node main-dev.js | pino-pretty"
   },
   "keywords": [],
   "author": "",

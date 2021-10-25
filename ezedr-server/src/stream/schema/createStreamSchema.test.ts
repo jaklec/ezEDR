@@ -1,3 +1,4 @@
+import assert from "assert";
 import { ObjectSchema } from "fluent-json-schema";
 import Ajv from "ajv";
 import { createStreamSchema } from "./createStreamSchema";
@@ -13,15 +14,15 @@ function validate(schema: ObjectSchema, payload: unknown) {
 }
 
 describe("Create new stream schema validation", () => {
-  test("reject unknown properties", () => {
-    expect(validate(createStreamSchema, { foo: "bar" })).toBeFalsy();
+  it("should reject unknown properties", () => {
+    assert.strictEqual(false, validate(createStreamSchema, { foo: "bar" }));
   });
 
-  test("accept streamId", () => {
-    expect(validate(createStreamSchema, { streamId: "123" })).toBeTruthy();
+  it("should accept streamId", () => {
+    assert.ok(validate(createStreamSchema, { streamId: "123" }));
   });
 
-  test("accept tenant", () => {
-    expect(validate(createStreamSchema, { tenant: "tenant-id" })).toBeTruthy();
+  it("should accept tenant", () => {
+    assert.ok(validate(createStreamSchema, { tenant: "tenant-id" }));
   });
 });

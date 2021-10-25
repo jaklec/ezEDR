@@ -1,5 +1,12 @@
 import { Client } from "./repository";
-import { ReadOpts, ReadStreamResult, EventRow } from "@jaklec/ezedr-core";
+import {
+  ReadOpts,
+  ReadEventsResult,
+  EventRow,
+  ReadStreamResult,
+  NoSuchResourceError,
+} from "@jaklec/ezedr-core";
+import { QueryResult } from "pg";
 
 /**
  * Read all events posted to a stream. This function could be used
@@ -14,12 +21,12 @@ import { ReadOpts, ReadStreamResult, EventRow } from "@jaklec/ezedr-core";
  * @returns Promise with all events associated with the stream with some meta
  * information.
  */
-export async function readStream(
+export async function readEvents(
   client: Client,
   streamId: string,
   tenant: string,
   readOpts?: ReadOpts
-): Promise<ReadStreamResult> {
+): Promise<ReadEventsResult> {
   let i = 1;
   let sqlQuery = `SELECT * FROM "events" WHERE "stream_id" = $${i} AND "tenant_id" = $${++i}`;
 
@@ -58,4 +65,36 @@ export async function readStream(
       events,
     };
   });
+}
+
+/**
+ * Read stream meta data.
+ * @param client `Client` wrapper
+ * @param streamId
+ * @param tenant
+ * @returns Promise with `ReadStreamResult`
+ * @throws `NoSuchResourceError` when stream doesn't exist.
+ */
+export async function readStream(
+  client: Client,
+  streamId: string,
+  tenant: string
+): Promise<ReadStreamResult> {
+  return client
+    .query("SELECT * FROM streams WHERE stream_id = $1 AND tenant_id = $2", [
+      streamId,
+      tenant,
+    ])
+    .then((res: QueryResult) => {
+      if (res.rows.length > 0) {
+        const row = res.rows[0];
+        return {
+          streamId: row.stream_id,
+          tenant: row.tenant_id,
+          currentVersion: row.version_seq,
+        };
+      } else {
+        throw new NoSuchResourceError("Could not find stream.");
+      }
+    });
 }

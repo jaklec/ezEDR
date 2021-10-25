@@ -1,3 +1,4 @@
+import assert from "assert";
 import { SaveInstruction } from "@jaklec/ezedr-core";
 import { Pool, QueryResult } from "pg";
 import { Client, createClient, createRepository } from "../src/repository";
@@ -41,7 +42,7 @@ describe("e2e: Event Reader", () => {
     await dbPool.query("TRUNCATE events");
   });
 
-  afterAll(async () => {
+  after(async () => {
     await dbPool.end();
   });
 
@@ -50,8 +51,7 @@ describe("e2e: Event Reader", () => {
    * client to aggregate all the events to the final state. The `readAggregate`
    * method should read all events associated with a certain aggregate.
    */
-  test("Read all event associated with an aggregate", async () => {
-    expect.assertions(2);
+  it("Read all event associated with an aggregate", async () => {
     try {
       // Insert three events into the log
       await insertEventRecord(dbPool, {
@@ -74,11 +74,11 @@ describe("e2e: Event Reader", () => {
       });
 
       // Execute!
-      const events = await repository.readStream("s0", "default");
+      const events = await repository.readEvents("s0", "default");
 
       // We should only have two events at this point
-      expect(events.streamId).toBe("s0");
-      expect(events.events.length).toBe(2);
+      assert.strictEqual(events.streamId, "s0");
+      assert.strictEqual(events.events.length, 2);
     } catch (err) {
       console.log(err);
     }
@@ -88,9 +88,7 @@ describe("e2e: Event Reader", () => {
    * Events should appear in ascending order with respect to the aggregate
    * version to make the data aggregation smoother.
    */
-  test("Events should appear in ascending order", async () => {
-    expect.assertions(2);
-
+  it("Events should appear in ascending order", async () => {
     await insertEventRecord(dbPool, {
       ...orderCreated,
       eventId: "e0",
@@ -103,10 +101,10 @@ describe("e2e: Event Reader", () => {
       streamId: "s0",
       tenant: "default",
     });
-    const events = await repository.readStream("s0", "default");
+    const events = await repository.readEvents("s0", "default");
 
-    expect(events.events[0].version).toBe(0);
-    expect(events.events[1].version).toBe(1);
+    assert.strictEqual(events.events[0].version, 0);
+    assert.strictEqual(events.events[1].version, 1);
   });
 
   /*
@@ -115,9 +113,7 @@ describe("e2e: Event Reader", () => {
    * scenario, the client would probably want to start reading from a certain
    * version.
    */
-  test("Start reading from version", async () => {
-    expect.assertions(2);
-
+  it("Start reading from version", async () => {
     await insertEventRecord(dbPool, {
       ...orderCreated,
       eventId: "e0",
@@ -130,12 +126,12 @@ describe("e2e: Event Reader", () => {
       streamId: "s0",
       tenant: "default",
     });
-    const events = await repository.readStream("s0", "default", {
+    const events = await repository.readEvents("s0", "default", {
       fromVersion: 1,
     });
 
-    expect(events.events.length).toBe(1);
-    expect(events.events[0].version).toBe(1);
+    assert.strictEqual(events.events.length, 1);
+    assert.strictEqual(events.events[0].version, 1);
   });
 
   /*
@@ -143,9 +139,7 @@ describe("e2e: Event Reader", () => {
    * aggregate with a very long history of events, it could be wise to use
    * pagination.
    */
-  test("Pagination", async () => {
-    expect.assertions(5);
-
+  it("Pagination", async () => {
     await insertEventRecord(dbPool, {
       ...orderCreated,
       eventId: "e0",
@@ -165,21 +159,21 @@ describe("e2e: Event Reader", () => {
       tenant: "default",
     });
 
-    const page0 = await repository.readStream("s0", "default", {
+    const page0 = await repository.readEvents("s0", "default", {
       limit: 2,
     });
 
-    expect(page0.events.length).toBe(2);
-    expect(page0.events[0].version).toBe(0);
-    expect(page0.events[1].version).toBe(1);
+    assert.strictEqual(page0.events.length, 2);
+    assert.strictEqual(page0.events[0].version, 0);
+    assert.strictEqual(page0.events[1].version, 1);
 
-    const page1 = await repository.readStream("s0", "default", {
+    const page1 = await repository.readEvents("s0", "default", {
       limit: 2,
       fromVersion: 2,
     });
 
-    expect(page1.events.length).toBe(1); // We have drained the log at this point
-    expect(page1.events[0].version).toBe(2);
+    assert.strictEqual(page1.events.length, 1); // We have drained the log at this point
+    assert.strictEqual(page1.events[0].version, 2);
   });
 });
 

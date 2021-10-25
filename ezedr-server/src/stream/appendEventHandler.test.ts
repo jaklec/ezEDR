@@ -5,10 +5,9 @@ import {
 } from "@jaklec/ezedr-core";
 import fastify, { InjectOptions } from "fastify";
 import { appendEventHandler } from "./appendEventHandler";
+import assert from "assert";
 
 describe("Append event to stream", () => {
-  const server = fastify({ logger: { level: process.env.LOG_LEVEL } });
-
   const pathPattern = "/test/:streamId";
   const path = "/test/s0";
 
@@ -20,63 +19,80 @@ describe("Append event to stream", () => {
     save: (a: SaveInstruction) => f(a),
   });
 
-  server.post(
-    pathPattern,
-    {},
-    appendEventHandler({
-      repository: mockRepo((instr) =>
-        Promise.resolve<SaveResponse>({
-          eventId: idGenerator(),
-          streamId: instr.streamId,
-          tenant: instr.tenant,
-          currentVersion: instr.baseVersion + 1,
-        })
-      ),
-      idGenerator,
-    })
-  );
+  const payload = {
+    type: "TEST_HAPPENED",
+    payload: "This is a test",
+    meta: "text",
+    baseVersion: 0,
+    tenant: "t0",
+  };
+
+  const validRequest: InjectOptions = {
+    method: "POST",
+    url: path,
+    payload,
+  };
 
   describe("successful save operation", () => {
-    const validRequest: InjectOptions = {
-      method: "POST",
-      url: path,
-      payload: {
-        type: "TEST_HAPPENED",
-        payload: "This is a test",
-        meta: "text",
-        baseVersion: 0,
-        tenant: "t0",
-      },
-    };
+    const server = fastify({ logger: { level: process.env.LOG_LEVEL } });
+    server.post(
+      pathPattern,
+      {},
+      appendEventHandler({
+        repository: mockRepo((instr) =>
+          Promise.resolve<SaveResponse>({
+            eventId: idGenerator(),
+            streamId: instr.streamId,
+            tenant: instr.tenant,
+            currentVersion: instr.baseVersion + 1,
+          })
+        ),
+        idGenerator,
+      })
+    );
 
-    test("status code", async () => {
-      const response = await server.inject(validRequest);
-      expect(response.statusCode).toBe(201);
+    after(() => {
+      server.close();
     });
 
-    test("location header", async () => {
+    it("should set status code 201 on success", async () => {
       const response = await server.inject(validRequest);
-      expect(response.headers.location).toBe(`${path}/events/${idGenerator()}`);
+      assert.strictEqual(response.statusCode, 201);
     });
 
-    test("eventId", async () => {
+    it("should set location header", async () => {
       const response = await server.inject(validRequest);
-      expect(response.json().eventId).toBe(idGenerator());
+      assert.strictEqual(
+        response.headers.location,
+        `${path}/events/${idGenerator()}`
+      );
     });
 
-    test("streamId", async () => {
+    it("should set eventId", async () => {
       const response = await server.inject(validRequest);
-      expect(response.json().streamId).toBe("s0");
+      assert.strictEqual(response.json().eventId, idGenerator());
     });
 
-    test("current version", async () => {
+    it("should set streamId", async () => {
       const response = await server.inject(validRequest);
-      expect(response.json().currentVersion).toBe(1);
+      assert.strictEqual(response.json().streamId, "s0");
     });
 
-    test("tenant", async () => {
+    it("should set current version", async () => {
       const response = await server.inject(validRequest);
-      expect(response.json().tenant).toBe("t0");
+      assert.strictEqual(response.json().currentVersion, 1);
+    });
+
+    it("should set tenant", async () => {
+      const response = await server.inject(validRequest);
+      assert.strictEqual(response.json().tenant, "t0");
+    });
+
+    it("should set default tenant", async () => {
+      const { tenant, ...noTenant } = payload;
+      const req = { ...validRequest, payload: noTenant };
+      const response = await server.inject(req);
+      assert.strictEqual(response.json().tenant, "default");
     });
   });
 });

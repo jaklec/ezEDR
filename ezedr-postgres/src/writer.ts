@@ -3,7 +3,7 @@ import {
   InitStreamResponse,
   SaveInstruction,
   SaveResponse,
-  Version,
+  Version
 } from "@jaklec/ezedr-core";
 import { Client } from "./repository";
 

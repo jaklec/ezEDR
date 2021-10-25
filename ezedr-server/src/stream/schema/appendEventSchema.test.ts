@@ -1,3 +1,4 @@
+import assert from "assert";
 import { ObjectSchema } from "fluent-json-schema";
 import Ajv from "ajv";
 import { appendEventSchema } from "./appendEventSchema";
@@ -8,12 +9,13 @@ function validate(schema: ObjectSchema, payload: unknown) {
 }
 
 describe("Append event to stream schema validation", () => {
-  test("reject additional properties", () => {
-    expect(
+  it("should reject additional properties", () => {
+    assert.strictEqual(
+      false,
       validate(appendEventSchema, {
         foo: "bar",
       })
-    ).toBeFalsy();
+    );
   });
 
   const minimalPayload = {
@@ -25,25 +27,25 @@ describe("Append event to stream schema validation", () => {
     committer: "test user",
   };
 
-  test("minimal payload", () => {
-    expect(validate(appendEventSchema, minimalPayload)).toBeTruthy();
+  it("should validate minimal payload", () => {
+    assert.ok(validate(appendEventSchema, minimalPayload));
   });
 
-  test("require type", () => {
+  it("should require type", () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { type, ...withoutType } = minimalPayload;
-    expect(validate(appendEventSchema, withoutType)).toBeFalsy();
+    assert.strictEqual(false, validate(appendEventSchema, withoutType));
   });
 
-  test("require baseVersion", () => {
+  it("should require baseVersion", () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { baseVersion, ...withoutBaseVersion } = minimalPayload;
-    expect(validate(appendEventSchema, withoutBaseVersion)).toBeFalsy();
+    assert.strictEqual(false, validate(appendEventSchema, withoutBaseVersion));
   });
 
-  test("require committer", () => {
+  it("should require committer", () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { committer, ...withoutCommitter } = minimalPayload;
-    expect(validate(appendEventSchema, withoutCommitter)).toBeFalsy();
+    assert.strictEqual(false, validate(appendEventSchema, withoutCommitter));
   });
 });

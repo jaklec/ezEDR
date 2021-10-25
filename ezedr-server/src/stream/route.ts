@@ -4,6 +4,7 @@ import { createStreamHandler } from "./createStreamHandler";
 import { appendEventHandler } from "./appendEventHandler";
 import { Repository } from "@jaklec/ezedr-core";
 import { appendEventSchema } from "./schema/appendEventSchema";
+import { readEventsHandler } from "./readEventHandler";
 
 /**
  * __Fastify__ API for stream resources. This function will append routes onto the
@@ -17,7 +18,7 @@ import { appendEventSchema } from "./schema/appendEventSchema";
  *
  * @returns `FastifyInstance`
  */
-export const createStreamRoute = (
+export const streamsRoute = (
   server: FastifyInstance,
   opts: {
     repository: Repository;
@@ -64,6 +65,8 @@ export const createStreamRoute = (
     },
     appendEventHandler(opts)
   );
+
+  server.get("/:streamId/events", {}, readEventsHandler(opts));
 
   return server;
 };

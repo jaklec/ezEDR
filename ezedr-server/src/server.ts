@@ -1,7 +1,7 @@
 import fastify, { FastifyInstance } from "fastify";
-import { Repository } from "@jaklec/ezedr-core";
+import { NoSuchResourceError, Repository } from "@jaklec/ezedr-core";
 import { healthCheckRoute } from "./health";
-import { createStreamRoute } from "./stream";
+import { streamsRoute } from "./stream";
 import { genReqId, generateId, appendRequestIdHeader } from "./requestId";
 
 /**
@@ -25,13 +25,41 @@ function server(repo: Repository): FastifyInstance {
   });
   appendRequestIdHeader(api);
 
+  api.setErrorHandler(async (error, request, response) => {
+    switch (error.constructor) {
+      case NoSuchResourceError: {
+        api.log.warn({
+          reqId: request.id,
+          message: error.message,
+          stack: error.stack,
+        });
+        response
+          .status(404)
+          .send({ requestId: request.id, status: 404, message: error.message });
+        break;
+      }
+      default: {
+        api.log.error({
+          reqId: request.id,
+          message: error.message,
+          stack: error.stack,
+        });
+        response.status(500).send({
+          requestId: request.id,
+          status: 500,
+          message: "Internal Server Error",
+        });
+      }
+    }
+  });
+
   api.register(async (api) => healthCheckRoute(api), {
     prefix: "/health",
   });
 
   api.register(
     async (api) => {
-      return createStreamRoute(api, {
+      return streamsRoute(api, {
         repository: repo,
         idGenerator: generateId,
       }).setValidatorCompiler;

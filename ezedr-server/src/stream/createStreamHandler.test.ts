@@ -1,3 +1,4 @@
+import assert from "assert";
 import {
   InitStream,
   InitStreamInstruction,
@@ -43,44 +44,44 @@ describe("Create a new event stream", () => {
     },
   };
 
-  test("status code", async () => {
+  it("should status code 200 on success", async () => {
     const response = await server.inject(validRequest);
-    expect(response.statusCode).toBe(201);
+    assert.strictEqual(response.statusCode, 200);
   });
 
-  test("location header", async () => {
+  it("should set location header", async () => {
     const response = await server.inject(validRequest);
-    expect(response.headers.location).toBe(`${path}/s0`);
+    assert.strictEqual(response.headers.location, `${path}/s0`);
   });
 
-  test("return streamId", async () => {
+  it("should return streamId", async () => {
     const response = await server.inject(validRequest);
-    expect(response.json().streamId).toBe("s0");
+    assert.strictEqual(response.json().streamId, "s0");
   });
 
-  test("return tenant", async () => {
+  it("should return tenant", async () => {
     const response = await server.inject(validRequest);
-    expect(response.json().tenant).toBe("t0");
+    assert.strictEqual(response.json().tenant, "t0");
   });
 
-  test("return version", async () => {
+  it("should return version", async () => {
     const response = await server.inject(validRequest);
-    expect(response.json().version).toBe(-1);
+    assert.strictEqual(response.json().version, -1);
   });
 
-  test("default tenant", async () => {
+  it("should default tenant", async () => {
     const response = await server.inject({
       ...validRequest,
       payload: { streamId: "s0" },
     });
-    expect(response.json().tenant).toBe("default");
+    assert.strictEqual(response.json().tenant, "default");
   });
 
-  test("generate streamId", async () => {
+  it("should generate streamId", async () => {
     const response = await server.inject({
       ...validRequest,
       payload: {},
     });
-    expect(response.json().streamId).toBe(idGenerator());
+    assert.strictEqual(response.json().streamId, idGenerator());
   });
 });
